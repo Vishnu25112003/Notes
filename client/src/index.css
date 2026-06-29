@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0a0a0c;
+  color: #cfcfd6;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a31; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a42; }
+
+.tiptap { outline: none; min-height: 200px; }
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #55555f;
+  pointer-events: none;
+  height: 0;
+}
+.ProseMirror { outline: none; }
+.ProseMirror h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; color: #f4f4f6; margin: 1.25rem 0 0.5rem; letter-spacing: -0.02em; }
+.ProseMirror h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 600; color: #ededf0; margin: 1rem 0 0.4rem; }
+.ProseMirror h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; color: #ededf0; margin: 0.75rem 0 0.3rem; }
+.ProseMirror p { margin: 0.3rem 0; line-height: 1.7; color: #cfcfd6; font-size: 15px; }
+.ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
+.ProseMirror ul li { color: #cfcfd6; margin: 0.2rem 0; }
+.ProseMirror ul li::marker { color: #7c6cff; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
+.ProseMirror ol li { color: #cfcfd6; margin: 0.2rem 0; }
+.ProseMirror strong { font-weight: 700; color: #f4f4f6; }
+.ProseMirror em { font-style: italic; }
+.ProseMirror u { text-decoration: underline; }
+.ProseMirror img { max-width: 100%; border-radius: 8px; margin: 0.75rem 0; border: 1px solid #2a2a31; }
+.ProseMirror > * + * { margin-top: 0.25rem; }
+.ProseMirror code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #9b93ff; background: rgba(124,108,255,.12); padding: 0.1em 0.4em; border-radius: 4px; }
