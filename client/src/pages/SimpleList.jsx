@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { getNotes, createNote, deleteNote } from '../api/notes.js';
 import Loader from '../components/common/Loader.jsx';
 import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
-import { flattenTipTap } from '../lib/flattenTipTap.js';
 
 const GRID_BG = {
   backgroundColor: '#0a0a0c',
@@ -26,12 +25,10 @@ function relativeTime(date) {
   return `${Math.floor(days / 7)}W AGO`;
 }
 
-function contentMeta(content) {
-  if (!content) return 'EMPTY';
-  const text = flattenTipTap(content);
-  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-  if (words > 0) return `${words} WORDS`;
-  return 'EMPTY';
+function contentMeta(searchText) {
+  if (!searchText) return 'EMPTY';
+  const words = searchText.trim().split(/\s+/).filter(Boolean).length;
+  return words > 0 ? `${words} WORDS` : 'EMPTY';
 }
 
 const BackArrow = () => (
@@ -127,10 +124,10 @@ export default function SimpleList() {
               {note.title || 'Untitled'}
             </div>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: '#7c7c86', marginTop: 7, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
-              {flattenTipTap(note.content)?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
+              {note.searchText?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
             </div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#55555f', letterSpacing: '0.06em' }}>
-              {contentMeta(note.content)}
+              {contentMeta(note.searchText)}
             </div>
             <button
               onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}

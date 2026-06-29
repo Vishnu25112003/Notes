@@ -1,0 +1,12 @@
+{
+  "name": "notespace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm ci --prefix server && npm ci --prefix client && npm run build --prefix client",
+    "start": "node server/src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

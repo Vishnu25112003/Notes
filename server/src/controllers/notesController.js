@@ -2,7 +2,7 @@ import SimpleNote from '../models/SimpleNote.js';
 import { flattenTipTap } from '../lib/flattenTipTap.js';
 
 export async function listNotes(req, res) {
-  const notes = await SimpleNote.find().sort({ updatedAt: -1 }).select('title updatedAt createdAt');
+  const notes = await SimpleNote.find().sort({ updatedAt: -1 }).select('title updatedAt createdAt searchText');
   res.json(notes);
 }
 
