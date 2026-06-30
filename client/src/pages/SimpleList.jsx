@@ -72,31 +72,42 @@ export default function SimpleList() {
     <div className="min-h-screen flex flex-col" style={GRID_BG}>
       <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)' }} />
 
+      <style>{`
+        .simplelist-header { padding: 18px 26px; }
+        .simplelist-badge { display: inline; }
+        .simplelist-grid { padding: 20px 26px; }
+        @media (max-width: 640px) {
+          .simplelist-header { padding: 14px 16px; }
+          .simplelist-badge { display: none; }
+          .simplelist-grid { padding: 16px 16px; }
+        }
+      `}</style>
+
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 26px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="simplelist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
           <button
             onClick={() => navigate('/')}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
           >
             <BackArrow /> HOME
           </button>
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,.1)' }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 600, color: '#f4f4f6' }}>Simple Notes</span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7c6cff', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px' }}>
+          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,.1)', flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#f4f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Simple Notes</span>
+          <span className="simplelist-badge" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7c6cff', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px', flexShrink: 0 }}>
             {String(notes.length).padStart(2, '0')} NOTES
           </span>
         </div>
         <button
           onClick={handleCreate}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
         >
           <PlusIcon /> NEW NOTE
         </button>
       </div>
 
       {/* Grid */}
-      <div style={{ padding: '24px 26px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="simplelist-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap: 14 }}>
         {notes.map((note, i) => (
           <div
             key={note._id}

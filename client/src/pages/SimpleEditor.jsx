@@ -56,8 +56,17 @@ export default function SimpleEditor() {
         <SaveStatus status={saveStatus} />
       </div>
 
+      <style>{`
+        .simple-editor-area { padding: 34px 56px 0; }
+        .simple-editor-title { font-size: 34px; }
+        @media (max-width: 767px) {
+          .simple-editor-area { padding: 20px 16px 0; }
+          .simple-editor-title { font-size: 26px; }
+        }
+      `}</style>
+
       {/* Editor area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 780, width: '100%', margin: '0 auto', padding: '34px 56px 0' }}>
+      <div className="simple-editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 780, width: '100%', margin: '0 auto' }}>
         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: '#55555f', marginBottom: 10 }}>
           UNTITLED · NOTE
         </div>
@@ -65,9 +74,9 @@ export default function SimpleEditor() {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Title"
+          className="simple-editor-title"
           style={{
             fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 34,
             fontWeight: 700,
             letterSpacing: '-0.02em',
             color: '#f4f4f6',

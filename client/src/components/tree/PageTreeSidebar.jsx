@@ -232,7 +232,11 @@ export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRef
         NEW PAGE
       </button>
 
-      <style>{`.page-node-action { transition: opacity 0.1s; } div:hover > .page-node-action { opacity: 1 !important; }`}</style>
+      <style>{`
+        .page-node-action { transition: opacity 0.1s; }
+        div:hover > .page-node-action { opacity: 1 !important; }
+        @media (hover: none) { .page-node-action { opacity: 1 !important; } }
+      `}</style>
 
       {newPageTarget && (
         <NewPageModal

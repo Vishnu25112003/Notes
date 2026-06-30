@@ -68,7 +68,7 @@ export default function HomeScreen() {
         </div>
 
         {/* User bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, marginTop: -4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginBottom: 8, marginTop: -4 }}>
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#55555f' }}>
             @{username}
           </span>
@@ -81,7 +81,7 @@ export default function HomeScreen() {
           </button>
           <button
             onClick={logout}
-            style={{ background: 'none', border: 'none', color: '#55555f', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}
+            style={{ background: 'none', border: 'none', color: '#55555f', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             Sign out
           </button>

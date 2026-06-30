@@ -30,8 +30,25 @@ export default function SectionWorkspace() {
   const [pages, setPages] = useState([]);
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
   const navigate = useNavigate();
+
+  // Track viewport width
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Auto-close sidebar drawer on mobile when navigating to a page
+  useEffect(() => {
+    if (isMobile && pageId) setSidebarOpen(false);
+  }, [pageId, isMobile]);
 
   const load = async () => {
     try {
@@ -54,24 +71,49 @@ export default function SectionWorkspace() {
 
   if (loading) return <Loader fullScreen />;
 
-  const showSidebar = sidebarOpen || !!pageId;
-
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0c' }}>
       <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)', flexShrink: 0 }} />
 
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {/* Sidebar */}
-        {showSidebar && (
-          <div style={{
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+
+        {/* Mobile backdrop — tap to close sidebar */}
+        {isMobile && sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 40,
+              background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(2px)',
+            }}
+          />
+        )}
+
+        {/* Sidebar — static on desktop, overlay drawer on mobile */}
+        {sidebarOpen && (
+          <div style={isMobile ? {
+            position: 'fixed',
+            top: 0, left: 0, bottom: 0,
+            width: 280, zIndex: 50,
+            background: '#0e0e12',
+            borderRight: '1px solid rgba(255,255,255,.08)',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '8px 0 32px rgba(0,0,0,.5)',
+          } : {
             width: pageId ? 230 : 280,
             flexShrink: 0,
             borderRight: '1px solid rgba(255,255,255,.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
             transition: 'width 0.2s',
           }}>
+            {isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 14px 4px' }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: '#55555f' }}>PAGES</span>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  style={{ background: 'none', border: 'none', color: '#55555f', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
+                >×</button>
+              </div>
+            )}
             <PageTreeSidebar
               pages={pages}
               sectionId={sectionId}
@@ -81,30 +123,35 @@ export default function SectionWorkspace() {
           </div>
         )}
 
-        {/* Main area */}
+        {/* Main content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           {pageId ? (
-            <Outlet context={{ pages, section, onRefresh: load, sidebarOpen, setSidebarOpen }} />
+            <Outlet context={{ pages, section, onRefresh: load, sidebarOpen, setSidebarOpen, isMobile }} />
           ) : (
             <>
-              {/* Workspace header (only shown when no page is open) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {/* Workspace header (no page selected) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0, gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
                   <button
                     onClick={() => setSidebarOpen(o => !o)}
-                    style={{ color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    style={{ color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                   ><MenuIcon /></button>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7a7a85' }}>
-                    <button onClick={() => navigate('/sections')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a7a85', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit' }}>SECTIONS</button>
-                    <span style={{ color: '#3a3a42' }}>/</span>
-                    <span style={{ color: '#f4f4f6', fontWeight: 600 }}>{section?.title}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7a7a85', minWidth: 0, overflow: 'hidden' }}>
+                    <button
+                      onClick={() => navigate('/sections')}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a7a85', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', flexShrink: 0 }}
+                    >SECTIONS</button>
+                    <span style={{ color: '#3a3a42', flexShrink: 0 }}>/</span>
+                    <span style={{ color: '#f4f4f6', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {section?.title}
+                    </span>
                   </span>
                 </div>
-                <SearchBar />
+                {!isMobile && <SearchBar />}
               </div>
 
-              {/* Select page / empty state */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', ...GRID_BG, gap: 14 }}>
+              {/* Empty / select-page state */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', ...GRID_BG, gap: 14, padding: 20 }}>
                 {pages.length === 0 ? (
                   <>
                     <div style={{
@@ -131,7 +178,7 @@ export default function SectionWorkspace() {
                       >+</button>
                     </div>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, color: '#ededf0' }}>No pages yet</div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: '#7a7a85' }}>PRESS + TO CREATE YOUR FIRST PAGE</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: '#7a7a85', textAlign: 'center' }}>PRESS + TO CREATE YOUR FIRST PAGE</div>
                     <button
                       onClick={handleAddFirstPage}
                       style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
@@ -144,7 +191,16 @@ export default function SectionWorkspace() {
                   <>
                     <span style={{ color: '#34343c' }}><DocIcon /></span>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: '#9a9aa5' }}>Select a page</div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#55555f', letterSpacing: '0.06em' }}>OR PRESS ⌘K TO SEARCH</div>
+                    {isMobile ? (
+                      <button
+                        onClick={() => setSidebarOpen(true)}
+                        style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7c6cff', background: 'rgba(124,108,255,.1)', border: '1px solid rgba(124,108,255,.3)', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        <MenuIcon /> OPEN PAGES
+                      </button>
+                    ) : (
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#55555f', letterSpacing: '0.06em' }}>OR PRESS ⌘K TO SEARCH</div>
+                    )}
                   </>
                 )}
               </div>

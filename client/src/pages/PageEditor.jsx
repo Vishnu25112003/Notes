@@ -8,6 +8,12 @@ import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
 import { useAutosave } from '../hooks/useAutosave.js';
 
+const MenuIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M3 12h18M3 18h18"/>
+  </svg>
+);
+
 function getDepth(pages, pageId) {
   let depth = 0;
   let current = pages.find(p => String(p._id) === String(pageId));
@@ -20,7 +26,7 @@ function getDepth(pages, pageId) {
 
 export default function PageEditor() {
   const { pageId } = useParams();
-  const { pages, section, onRefresh } = useOutletContext();
+  const { pages, section, onRefresh, setSidebarOpen, isMobile = false } = useOutletContext();
   const [page, setPage] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(null);
@@ -57,14 +63,32 @@ export default function PageEditor() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <style>{`
+        .page-editor-content { padding: 30px 44px 0; }
+        .page-editor-title { font-size: 30px; }
+        @media (max-width: 767px) {
+          .page-editor-content { padding: 20px 16px 0; }
+          .page-editor-title { font-size: 24px; }
+        }
+      `}</style>
+
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0 }}>
-        <Breadcrumbs section={section} pages={pages} currentPageId={pageId} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0, gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, overflow: 'hidden' }}>
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{ color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, padding: '2px 4px' }}
+              title="Open page list"
+            ><MenuIcon /></button>
+          )}
+          <Breadcrumbs section={section} pages={pages} currentPageId={pageId} />
+        </div>
         <SaveStatus status={saveStatus} />
       </div>
 
       {/* Editor content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '30px 44px 0' }}>
+      <div className="page-editor-content" style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: '#55555f', marginBottom: 9 }}>
           PAGE · DEPTH {depth}
         </div>
@@ -72,9 +96,9 @@ export default function PageEditor() {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder="Page title"
+          className="page-editor-title"
           style={{
             fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 30,
             fontWeight: 700,
             letterSpacing: '-0.02em',
             color: '#f4f4f6',
