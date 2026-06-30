@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { getNotes, createNote, deleteNote } from '../api/notes.js';
 import Loader from '../components/common/Loader.jsx';
 import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
+import ThemeToggle from '../components/common/ThemeToggle.jsx';
 
 const GRID_BG = {
-  backgroundColor: '#0a0a0c',
-  backgroundImage: 'linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)',
+  backgroundColor: 'var(--bg)',
+  backgroundImage: 'linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px)',
   backgroundSize: '32px 32px',
 };
 
@@ -70,7 +71,7 @@ export default function SimpleList() {
 
   return (
     <div className="min-h-screen flex flex-col" style={GRID_BG}>
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)' }} />
+      <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)' }} />
 
       <style>{`
         .simplelist-header { padding: 18px 26px; }
@@ -84,26 +85,29 @@ export default function SimpleList() {
       `}</style>
 
       {/* Header */}
-      <div className="simplelist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
+      <div className="simplelist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-faint)', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
           <button
             onClick={() => navigate('/')}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
           >
             <BackArrow /> HOME
           </button>
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,.1)', flexShrink: 0 }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#f4f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Simple Notes</span>
-          <span className="simplelist-badge" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7c6cff', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px', flexShrink: 0 }}>
+          <span style={{ width: 1, height: 18, background: 'var(--divider)', flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Simple Notes</span>
+          <span className="simplelist-badge" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--accent)', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px', flexShrink: 0 }}>
             {String(notes.length).padStart(2, '0')} NOTES
           </span>
         </div>
-        <button
-          onClick={handleCreate}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
-        >
-          <PlusIcon /> NEW NOTE
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <ThemeToggle />
+          <button
+            onClick={handleCreate}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent-fg)', background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <PlusIcon /> NEW NOTE
+          </button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -113,10 +117,10 @@ export default function SimpleList() {
             key={note._id}
             onClick={() => navigate(`/simple/${note._id}`)}
             style={{
-              border: '1px solid #2a2a31',
+              border: '1px solid var(--border)',
               borderRadius: 9,
               padding: 18,
-              background: 'rgba(255,255,255,.014)',
+              background: 'var(--card-subtle)',
               height: 180,
               display: 'flex',
               flexDirection: 'column',
@@ -125,32 +129,32 @@ export default function SimpleList() {
               transition: 'border-color 0.15s, background 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.4)'; e.currentTarget.style.background = 'rgba(124,108,255,.04)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a31'; e.currentTarget.style.background = 'rgba(255,255,255,.014)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: DOT_COLORS[i % DOT_COLORS.length], display: 'block' }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#55555f' }}>{relativeTime(note.updatedAt)}</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)' }}>{relativeTime(note.updatedAt)}</span>
             </div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, color: '#ededf0', marginTop: 14 }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--text-2)', marginTop: 14 }}>
               {note.title || 'Untitled'}
             </div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: '#7c7c86', marginTop: 7, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 7, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
               {note.searchText?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#55555f', letterSpacing: '0.06em' }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.06em' }}>
               {contentMeta(note.searchText)}
             </div>
             <button
               onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}
               style={{
                 position: 'absolute', top: 8, right: 8,
-                background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)',
-                color: '#7a7a85', cursor: 'pointer',
+                background: 'var(--border-faint)', border: '1px solid var(--border-faint)',
+                color: 'var(--text-dim)', cursor: 'pointer',
                 fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
               }}
               className="delete-btn"
-              onMouseEnter={e => { e.currentTarget.style.color = '#ec5d8a'; e.currentTarget.style.background = 'rgba(236,93,138,.12)'; e.currentTarget.style.borderColor = 'rgba(236,93,138,.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#7a7a85'; e.currentTarget.style.background = 'rgba(255,255,255,.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)'; }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'var(--error-bg)'; e.currentTarget.style.borderColor = 'var(--error-border)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.borderColor = 'var(--border-faint)'; }}
             >×</button>
           </div>
         ))}
@@ -159,7 +163,7 @@ export default function SimpleList() {
         <div
           onClick={handleCreate}
           style={{
-            border: '1px dashed #34343c',
+            border: '1px dashed var(--border-dashed)',
             borderRadius: 9,
             height: 180,
             display: 'flex',
@@ -171,17 +175,17 @@ export default function SimpleList() {
             transition: 'border-color 0.15s',
           }}
           onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = '#34343c'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-dashed)'}
         >
-          <span style={{ color: '#7c6cff' }}><PlusIcon size={22} /></span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85' }}>NEW NOTE</span>
+          <span style={{ color: 'var(--accent)' }}><PlusIcon size={22} /></span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>NEW NOTE</span>
         </div>
       </div>
 
       {notes.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: '#9a9aa5', marginBottom: 8 }}>No notes yet</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: '#55555f' }}>PRESS + TO CREATE YOUR FIRST NOTE</div>
+          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>No notes yet</div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: 'var(--text-label)' }}>PRESS + TO CREATE YOUR FIRST NOTE</div>
         </div>
       )}
 

@@ -1,12 +1,82 @@
 @import "tailwindcss";
 
+:root, [data-theme="dark"] {
+  --bg: #0a0a0c;
+  --bg-sidebar: #0e0e12;
+  --card: #111116;
+  --surface: #121216;
+  --input-bg: #18181f;
+  --border: #2a2a31;
+  --border-dashed: #34343c;
+  --separator: #3a3a42;
+  --border-faint: rgba(255,255,255,.06);
+  --divider: rgba(255,255,255,.1);
+  --grid-line: rgba(255,255,255,.025);
+  --card-subtle: rgba(255,255,255,.013);
+  --scrollbar-thumb: #2a2a31;
+  --scrollbar-thumb-hover: #3a3a42;
+  --text: #f4f4f6;
+  --text-2: #ededf0;
+  --text-body: #cfcfd6;
+  --text-mid: #c8c8d0;
+  --text-muted: #9a9aa5;
+  --text-dim: #7a7a85;
+  --text-label: #55555f;
+  --accent: #7c6cff;
+  --accent-2: #4b3fd6;
+  --accent-fg: #0a0a0c;
+  --accent-text: #cfc8ff;
+  --success: #5be3a0;
+  --warning: #f5a524;
+  --error: #ec5d8a;
+  --error-bg: rgba(236,93,138,.08);
+  --error-border: rgba(236,93,138,.2);
+  --success-bg: rgba(91,227,160,.08);
+  --success-border: rgba(91,227,160,.2);
+}
+
+[data-theme="light"] {
+  --bg: #f5f5f8;
+  --bg-sidebar: #ebebf0;
+  --card: #ffffff;
+  --surface: #f9f9fc;
+  --input-bg: #ededf2;
+  --border: #d8d8e4;
+  --border-dashed: #c4c4d2;
+  --separator: #c0c0cc;
+  --border-faint: rgba(0,0,0,.07);
+  --divider: rgba(0,0,0,.09);
+  --grid-line: rgba(0,0,0,.04);
+  --card-subtle: #ffffff;
+  --scrollbar-thumb: #c4c4d2;
+  --scrollbar-thumb-hover: #b0b0c0;
+  --text: #111118;
+  --text-2: #1e1e28;
+  --text-body: #3a3a4a;
+  --text-mid: #4a4a5a;
+  --text-muted: #686878;
+  --text-dim: #6e6e7e;
+  --text-label: #8a8a9a;
+  --accent: #7c6cff;
+  --accent-2: #4b3fd6;
+  --accent-fg: #ffffff;
+  --accent-text: #5a4ce0;
+  --success: #1a9e6e;
+  --warning: #b07010;
+  --error: #c42058;
+  --error-bg: rgba(196,32,88,.08);
+  --error-border: rgba(196,32,88,.2);
+  --success-bg: rgba(26,158,110,.08);
+  --success-border: rgba(26,158,110,.2);
+}
+
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0a0a0c;
-  color: #cfcfd6;
+  background: var(--bg);
+  color: var(--text-body);
   min-height: 100vh;
 }
 
@@ -23,30 +93,30 @@ body {
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a31; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a42; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 .tiptap { outline: none; min-height: 200px; }
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #55555f;
+  color: var(--text-label);
   pointer-events: none;
   height: 0;
 }
 .ProseMirror { outline: none; }
-.ProseMirror h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; color: #f4f4f6; margin: 1.25rem 0 0.5rem; letter-spacing: -0.02em; }
-.ProseMirror h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 600; color: #ededf0; margin: 1rem 0 0.4rem; }
-.ProseMirror h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; color: #ededf0; margin: 0.75rem 0 0.3rem; }
-.ProseMirror p { margin: 0.3rem 0; line-height: 1.7; color: #cfcfd6; font-size: 15px; }
+.ProseMirror h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 1.25rem 0 0.5rem; letter-spacing: -0.02em; }
+.ProseMirror h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 600; color: var(--text-2); margin: 1rem 0 0.4rem; }
+.ProseMirror h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--text-2); margin: 0.75rem 0 0.3rem; }
+.ProseMirror p { margin: 0.3rem 0; line-height: 1.7; color: var(--text-body); font-size: 15px; }
 .ProseMirror ul { list-style: disc; padding-left: 1.5rem; }
-.ProseMirror ul li { color: #cfcfd6; margin: 0.2rem 0; }
-.ProseMirror ul li::marker { color: #7c6cff; }
+.ProseMirror ul li { color: var(--text-body); margin: 0.2rem 0; }
+.ProseMirror ul li::marker { color: var(--accent); }
 .ProseMirror ol { list-style: decimal; padding-left: 1.5rem; }
-.ProseMirror ol li { color: #cfcfd6; margin: 0.2rem 0; }
-.ProseMirror strong { font-weight: 700; color: #f4f4f6; }
+.ProseMirror ol li { color: var(--text-body); margin: 0.2rem 0; }
+.ProseMirror strong { font-weight: 700; color: var(--text); }
 .ProseMirror em { font-style: italic; }
 .ProseMirror u { text-decoration: underline; }
-.ProseMirror img { max-width: 100%; border-radius: 8px; margin: 0.75rem 0; border: 1px solid #2a2a31; }
+.ProseMirror img { max-width: 100%; border-radius: 8px; margin: 0.75rem 0; border: 1px solid var(--border); }
 .ProseMirror > * + * { margin-top: 0.25rem; }
 .ProseMirror code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #9b93ff; background: rgba(124,108,255,.12); padding: 0.1em 0.4em; border-radius: 4px; }

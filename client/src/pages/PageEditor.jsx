@@ -6,6 +6,7 @@ import DrawingCanvas from '../components/drawing/DrawingCanvas.jsx';
 import Breadcrumbs from '../components/tree/Breadcrumbs.jsx';
 import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
+import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import { useAutosave } from '../hooks/useAutosave.js';
 
 const MenuIcon = () => (
@@ -57,7 +58,7 @@ export default function PageEditor() {
   );
 
   if (loading) return <Loader />;
-  if (!page) return <div style={{ padding: 32, color: '#55555f', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>Page not found</div>;
+  if (!page) return <div style={{ padding: 32, color: 'var(--text-label)', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>Page not found</div>;
 
   const depth = getDepth(pages, pageId);
 
@@ -73,23 +74,26 @@ export default function PageEditor() {
       `}</style>
 
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0, gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border-faint)', flexShrink: 0, gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, overflow: 'hidden' }}>
           {isMobile && (
             <button
               onClick={() => setSidebarOpen(true)}
-              style={{ color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, padding: '2px 4px' }}
+              style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, padding: '2px 4px' }}
               title="Open page list"
             ><MenuIcon /></button>
           )}
           <Breadcrumbs section={section} pages={pages} currentPageId={pageId} />
         </div>
-        <SaveStatus status={saveStatus} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <ThemeToggle />
+          <SaveStatus status={saveStatus} />
+        </div>
       </div>
 
       {/* Editor content */}
       <div className="page-editor-content" style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: '#55555f', marginBottom: 9 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-label)', marginBottom: 9 }}>
           PAGE · DEPTH {depth}
         </div>
         <input
@@ -101,7 +105,7 @@ export default function PageEditor() {
             fontFamily: "'Space Grotesk', sans-serif",
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            color: '#f4f4f6',
+            color: 'var(--text)',
             background: 'transparent',
             border: 'none',
             outline: 'none',

@@ -36,21 +36,21 @@ function NewPageModal({ onConfirm, onClose, context = '' }) {
       <div
         style={{
           width: '100%', maxWidth: 400,
-          background: '#121216', border: '1px solid #2a2a31',
+          background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: 12, padding: 22,
-          boxShadow: '0 30px 60px -20px rgba(0,0,0,.7)',
+          boxShadow: '0 30px 60px -20px rgba(0,0,0,.4)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
-          <span style={{ color: '#7c6cff' }}><DocIcon /></span>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, color: '#f4f4f6' }}>New Page</span>
+          <span style={{ color: 'var(--accent)' }}><DocIcon /></span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>New Page</span>
           {context && (
-            <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#55555f' }}>
+            <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)' }}>
               IN {context.toUpperCase()}
             </span>
           )}
         </div>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#55555f', marginBottom: 7 }}>PAGE TITLE</div>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-label)', marginBottom: 7 }}>PAGE TITLE</div>
         <input
           autoFocus
           value={title}
@@ -58,21 +58,21 @@ function NewPageModal({ onConfirm, onClose, context = '' }) {
           onKeyDown={e => e.key === 'Enter' && title.trim() && onConfirm(title)}
           placeholder="Untitled"
           style={{
-            width: '100%', background: '#0a0a0c',
-            border: '1px solid #7c6cff', borderRadius: 8,
+            width: '100%', background: 'var(--bg)',
+            border: '1px solid var(--accent)', borderRadius: 8,
             padding: '11px 13px',
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: '#ededf0',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, color: 'var(--text-2)',
             outline: 'none', display: 'block',
           }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 9, marginTop: 20 }}>
           <button
             onClick={onClose}
-            style={{ padding: '9px 16px', borderRadius: 7, border: '1px solid #2e2e36', background: 'transparent', color: '#c8c8d0', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
+            style={{ padding: '9px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
           >CANCEL</button>
           <button
             onClick={() => title.trim() && onConfirm(title)}
-            style={{ padding: '9px 16px', borderRadius: 7, border: 'none', background: '#7c6cff', color: '#0a0a0c', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
+            style={{ padding: '9px 16px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
           >CREATE</button>
         </div>
       </div>
@@ -110,11 +110,11 @@ function PageNode({ page, allPages, sectionId, currentPageId, depth = 0, onRefre
           borderRadius: 6,
           cursor: 'pointer',
           background: isActive ? 'rgba(124,108,255,.16)' : 'transparent',
-          color: isActive ? '#cfc8ff' : '#9a9aa5',
+          color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
           transition: 'background 0.1s, color 0.1s',
         }}
-        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,.04)'; e.currentTarget.style.color = '#c8c8d0'; } }}
-        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9a9aa5'; } }}
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.color = 'var(--text-mid)'; } }}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
         onClick={() => navigate(`/sections/${sectionId}/pages/${page._id}`)}
       >
         {children.length > 0 ? (
@@ -133,17 +133,17 @@ function PageNode({ page, allPages, sectionId, currentPageId, depth = 0, onRefre
         </span>
         <span
           onClick={e => { e.stopPropagation(); onNewPage(page._id, page.title); }}
-          style={{ fontSize: 14, color: '#55555f', cursor: 'pointer', padding: '0 2px', opacity: 0 }}
+          style={{ fontSize: 14, color: 'var(--text-label)', cursor: 'pointer', padding: '0 2px', opacity: 0 }}
           className="page-node-action"
           title="Add sub-page"
         >+</span>
         <span
           onClick={e => { e.stopPropagation(); setConfirm(true); }}
-          style={{ fontSize: 14, color: '#55555f', cursor: 'pointer', padding: '0 2px', opacity: 0 }}
+          style={{ fontSize: 14, color: 'var(--text-label)', cursor: 'pointer', padding: '0 2px', opacity: 0 }}
           className="page-node-action"
           title="Delete"
-          onMouseEnter={e => e.currentTarget.style.color = '#ec5d8a'}
-          onMouseLeave={e => e.currentTarget.style.color = '#55555f'}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--error)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-label)'}
         >×</span>
       </div>
 
@@ -179,7 +179,7 @@ function PageNode({ page, allPages, sectionId, currentPageId, depth = 0, onRefre
 
 export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRefresh }) {
   const navigate = useNavigate();
-  const [newPageTarget, setNewPageTarget] = useState(null); // {parentId, context}
+  const [newPageTarget, setNewPageTarget] = useState(null);
   const topLevel = pages.filter(p => !p.parentId).sort((a, b) => a.order - b.order);
 
   const handleNewPage = (parentId, context = '') => {
@@ -196,7 +196,7 @@ export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRef
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: '#55555f', padding: '14px 8px 10px 16px' }}>PAGES</div>
+      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-label)', padding: '14px 8px 10px 16px' }}>PAGES</div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px' }}>
         {topLevel.map(page => (
@@ -218,8 +218,8 @@ export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRef
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 8px',
           margin: '4px 6px 8px',
-          borderTop: '1px solid rgba(255,255,255,.06)',
-          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7c6cff',
+          borderTop: '1px solid var(--border-faint)',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent)',
           background: 'none', border: 'none', cursor: 'pointer',
           borderRadius: 6,
         }}

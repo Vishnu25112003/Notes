@@ -7,8 +7,8 @@ import Loader from '../components/common/Loader.jsx';
 import { createPage } from '../api/pages.js';
 
 const GRID_BG = {
-  backgroundColor: '#0a0a0c',
-  backgroundImage: 'linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)',
+  backgroundColor: 'var(--bg)',
+  backgroundImage: 'linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px)',
   backgroundSize: '32px 32px',
 };
 
@@ -34,7 +34,6 @@ export default function SectionWorkspace() {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
   const navigate = useNavigate();
 
-  // Track viewport width
   useEffect(() => {
     const onResize = () => {
       const mobile = window.innerWidth < 768;
@@ -45,7 +44,6 @@ export default function SectionWorkspace() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Auto-close sidebar drawer on mobile when navigating to a page
   useEffect(() => {
     if (isMobile && pageId) setSidebarOpen(false);
   }, [pageId, isMobile]);
@@ -72,12 +70,12 @@ export default function SectionWorkspace() {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0c' }}>
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)', flexShrink: 0 }} />
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)', flexShrink: 0 }} />
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-        {/* Mobile backdrop — tap to close sidebar */}
+        {/* Mobile backdrop */}
         {isMobile && sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
@@ -88,29 +86,29 @@ export default function SectionWorkspace() {
           />
         )}
 
-        {/* Sidebar — static on desktop, overlay drawer on mobile */}
+        {/* Sidebar */}
         {sidebarOpen && (
           <div style={isMobile ? {
             position: 'fixed',
             top: 0, left: 0, bottom: 0,
             width: 280, zIndex: 50,
-            background: '#0e0e12',
-            borderRight: '1px solid rgba(255,255,255,.08)',
+            background: 'var(--bg-sidebar)',
+            borderRight: '1px solid var(--border-faint)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '8px 0 32px rgba(0,0,0,.5)',
+            boxShadow: '8px 0 32px rgba(0,0,0,.3)',
           } : {
             width: pageId ? 230 : 280,
             flexShrink: 0,
-            borderRight: '1px solid rgba(255,255,255,.06)',
+            borderRight: '1px solid var(--border-faint)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
             transition: 'width 0.2s',
           }}>
             {isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 14px 4px' }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: '#55555f' }}>PAGES</span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-label)' }}>PAGES</span>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  style={{ background: 'none', border: 'none', color: '#55555f', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-label)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
                 >×</button>
               </div>
             )}
@@ -130,19 +128,19 @@ export default function SectionWorkspace() {
           ) : (
             <>
               {/* Workspace header (no page selected) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid rgba(255,255,255,.06)', flexShrink: 0, gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border-faint)', flexShrink: 0, gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
                   <button
                     onClick={() => setSidebarOpen(o => !o)}
-                    style={{ color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                    style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                   ><MenuIcon /></button>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7a7a85', minWidth: 0, overflow: 'hidden' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--text-dim)', minWidth: 0, overflow: 'hidden' }}>
                     <button
                       onClick={() => navigate('/sections')}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7a7a85', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', flexShrink: 0 }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit', flexShrink: 0 }}
                     >SECTIONS</button>
-                    <span style={{ color: '#3a3a42', flexShrink: 0 }}>/</span>
-                    <span style={{ color: '#f4f4f6', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ color: 'var(--separator)', flexShrink: 0 }}>/</span>
+                    <span style={{ color: 'var(--text)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {section?.title}
                     </span>
                   </span>
@@ -156,11 +154,11 @@ export default function SectionWorkspace() {
                   <>
                     <div style={{
                       position: 'relative', width: 70, height: 70,
-                      border: '1px solid #2a2a31', borderRadius: 14,
+                      border: '1px solid var(--border)', borderRadius: 14,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'rgba(124,108,255,.06)',
                     }}>
-                      <span style={{ color: '#7c6cff' }}>
+                      <span style={{ color: 'var(--accent)' }}>
                         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
                           <path d="M14 3v5h5"/>
@@ -171,17 +169,17 @@ export default function SectionWorkspace() {
                         style={{
                           position: 'absolute', bottom: -6, right: -6,
                           width: 24, height: 24, borderRadius: '50%',
-                          background: '#7c6cff', color: '#0a0a0c',
+                          background: 'var(--accent)', color: 'var(--accent-fg)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           border: 'none', cursor: 'pointer', fontSize: 16, lineHeight: 1,
                         }}
                       >+</button>
                     </div>
-                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, color: '#ededf0' }}>No pages yet</div>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: '#7a7a85', textAlign: 'center' }}>PRESS + TO CREATE YOUR FIRST PAGE</div>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, color: 'var(--text-2)' }}>No pages yet</div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.04em', color: 'var(--text-dim)', textAlign: 'center' }}>PRESS + TO CREATE YOUR FIRST PAGE</div>
                     <button
                       onClick={handleAddFirstPage}
-                      style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent-fg)', background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
                       NEW PAGE
@@ -189,17 +187,17 @@ export default function SectionWorkspace() {
                   </>
                 ) : (
                   <>
-                    <span style={{ color: '#34343c' }}><DocIcon /></span>
-                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: '#9a9aa5' }}>Select a page</div>
+                    <span style={{ color: 'var(--border-dashed)' }}><DocIcon /></span>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-muted)' }}>Select a page</div>
                     {isMobile ? (
                       <button
                         onClick={() => setSidebarOpen(true)}
-                        style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7c6cff', background: 'rgba(124,108,255,.1)', border: '1px solid rgba(124,108,255,.3)', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent)', background: 'rgba(124,108,255,.1)', border: '1px solid rgba(124,108,255,.3)', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: 'pointer' }}
                       >
                         <MenuIcon /> OPEN PAGES
                       </button>
                     ) : (
-                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#55555f', letterSpacing: '0.06em' }}>OR PRESS ⌘K TO SEARCH</div>
+                      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-label)', letterSpacing: '0.06em' }}>OR PRESS ⌘K TO SEARCH</div>
                     )}
                   </>
                 )}

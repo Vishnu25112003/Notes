@@ -4,10 +4,11 @@ import { getSections, createSection, deleteSection } from '../api/sections.js';
 import Loader from '../components/common/Loader.jsx';
 import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
 import Modal from '../components/common/Modal.jsx';
+import ThemeToggle from '../components/common/ThemeToggle.jsx';
 
 const GRID_BG = {
-  backgroundColor: '#0a0a0c',
-  backgroundImage: 'linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)',
+  backgroundColor: 'var(--bg)',
+  backgroundImage: 'linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px)',
   backgroundSize: '32px 32px',
 };
 
@@ -75,7 +76,7 @@ export default function SectionList() {
 
   return (
     <div className="min-h-screen flex flex-col" style={GRID_BG}>
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)' }} />
+      <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)' }} />
 
       <style>{`
         .sectionlist-header { padding: 18px 26px; }
@@ -89,26 +90,29 @@ export default function SectionList() {
       `}</style>
 
       {/* Header */}
-      <div className="sectionlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
+      <div className="sectionlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-faint)', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
           <button
             onClick={() => navigate('/')}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
           >
             <BackArrow /> HOME
           </button>
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,.1)', flexShrink: 0 }} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#f4f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Sections</span>
-          <span className="sectionlist-badge" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: '#7c6cff', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px', flexShrink: 0 }}>
+          <span style={{ width: 1, height: 18, background: 'var(--divider)', flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Sections</span>
+          <span className="sectionlist-badge" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--accent)', border: '1px solid rgba(124,108,255,.4)', borderRadius: 20, padding: '3px 9px', flexShrink: 0 }}>
             {String(sections.length).padStart(2, '0')} SECTIONS
           </span>
         </div>
-        <button
-          onClick={() => { setNewTitle(''); setCreating(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#0a0a0c', background: '#7c6cff', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
-        >
-          <PlusIcon /> NEW SECTION
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <ThemeToggle />
+          <button
+            onClick={() => { setNewTitle(''); setCreating(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent-fg)', background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '9px 15px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <PlusIcon /> NEW SECTION
+          </button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -121,28 +125,28 @@ export default function SectionList() {
               onClick={() => navigate(`/sections/${s._id}`)}
               style={{
                 position: 'relative',
-                border: '1px solid #2a2a31',
+                border: '1px solid var(--border)',
                 borderRadius: 9,
                 padding: 20,
-                background: 'rgba(255,255,255,.014)',
+                background: 'var(--card-subtle)',
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s, background 0.15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}60`; e.currentTarget.style.background = `${color}08`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a31'; e.currentTarget.style.background = 'rgba(255,255,255,.014)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
             >
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color }} />
               <div style={{ color, marginTop: 6 }}><LayersIcon color={color} /></div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: '#ededf0', marginTop: 16 }}>{s.title}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#55555f', letterSpacing: '0.08em', marginTop: 8 }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 16 }}>{s.title}</div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.08em', marginTop: 8 }}>
                 UPDATED {relativeTime(s.updatedAt)}
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setDeleteTarget(s); }}
-                style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', color: '#55555f', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
-                onMouseEnter={e => e.currentTarget.style.color = '#ec5d8a'}
-                onMouseLeave={e => e.currentTarget.style.color = '#55555f'}
+                style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', color: 'var(--text-label)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--error)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-label)'}
               >×</button>
             </div>
           );
@@ -152,7 +156,7 @@ export default function SectionList() {
         <div
           onClick={() => { setNewTitle(''); setCreating(true); }}
           style={{
-            border: '1px dashed #34343c',
+            border: '1px dashed var(--border-dashed)',
             borderRadius: 9,
             minHeight: 138,
             display: 'flex',
@@ -164,16 +168,16 @@ export default function SectionList() {
             transition: 'border-color 0.15s',
           }}
           onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = '#34343c'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-dashed)'}
         >
-          <span style={{ color: '#7c6cff' }}><PlusIcon size={22} /></span>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85' }}>NEW SECTION</span>
+          <span style={{ color: 'var(--accent)' }}><PlusIcon size={22} /></span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>NEW SECTION</span>
         </div>
       </div>
 
       {creating && (
         <Modal title="New Section" onClose={() => setCreating(false)}>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.12em', color: '#55555f', marginBottom: 7 }}>SECTION TITLE</div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-label)', marginBottom: 7 }}>SECTION TITLE</div>
           <input
             autoFocus
             value={newTitle}
@@ -182,13 +186,13 @@ export default function SectionList() {
             placeholder="Section title"
             style={{
               width: '100%',
-              background: '#0a0a0c',
-              border: '1px solid #7c6cff',
+              background: 'var(--bg)',
+              border: '1px solid var(--accent)',
               borderRadius: 8,
               padding: '11px 13px',
               fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 14,
-              color: '#ededf0',
+              color: 'var(--text-2)',
               outline: 'none',
               display: 'block',
             }}
@@ -196,11 +200,11 @@ export default function SectionList() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 9, marginTop: 20 }}>
             <button
               onClick={() => setCreating(false)}
-              style={{ padding: '9px 16px', borderRadius: 7, border: '1px solid #2e2e36', background: 'transparent', color: '#c8c8d0', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
+              style={{ padding: '9px 16px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
             >CANCEL</button>
             <button
               onClick={handleCreate}
-              style={{ padding: '9px 16px', borderRadius: 7, border: 'none', background: '#7c6cff', color: '#0a0a0c', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
+              style={{ padding: '9px 16px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}
             >CREATE</button>
           </div>
         </Modal>

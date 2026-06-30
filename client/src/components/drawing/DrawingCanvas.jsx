@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import { getDrawing, updateDrawing, exportDrawing } from '../../api/drawings.js';
+import { useTheme } from '../../context/ThemeContext.jsx';
 
 const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
@@ -16,6 +17,7 @@ const PencilIcon = () => (
 );
 
 export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
+  const { theme } = useTheme();
   const [initialData, setInitialData] = useState(null);
   const [excalidrawAPI, setExcalidrawAPI] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -60,33 +62,33 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
   const canvasHeight = typeof window !== 'undefined' ? window.innerHeight - HEADER_HEIGHT : 600;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#08080a' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Header */}
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '14px 20px', height: HEADER_HEIGHT, flexShrink: 0,
-          borderBottom: '1px solid rgba(255,255,255,.06)',
+          borderBottom: '1px solid var(--border-faint)',
         }}
       >
-        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: '#f4f4f6', display: 'flex', alignItems: 'center', gap: 9 }}>
-          <span style={{ color: '#7c6cff' }}><PencilIcon /></span>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{ color: 'var(--accent)' }}><PencilIcon /></span>
           Drawing
         </span>
         <div style={{ display: 'flex', gap: 9, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: '#7c6cff', color: '#0a0a0c', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
+            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
           >{saving ? 'SAVING…' : 'SAVE'}</button>
           <button
             onClick={async () => { await handleSave(); onClose(); }}
             disabled={saving}
-            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: '#7c6cff', color: '#0a0a0c', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
+            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
           >SAVE &amp; CLOSE</button>
           <button
             onClick={onClose}
-            style={{ padding: '8px 15px', borderRadius: 7, border: '1px solid #2e2e36', background: 'transparent', color: '#c8c8d0', cursor: 'pointer' }}
+            style={{ padding: '8px 15px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', cursor: 'pointer' }}
           >CLOSE</button>
         </div>
       </div>
@@ -94,19 +96,19 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
       {/* Canvas */}
       <div style={{ width: '100%', height: canvasHeight, position: 'relative' }}>
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#55555f' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-label)' }}>
             LOADING CANVAS…
           </div>
         ) : (
           <Suspense fallback={
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#55555f' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-label)' }}>
               LOADING…
             </div>
           }>
             <ExcalidrawLazy
               excalidrawAPI={(api) => setExcalidrawAPI(api)}
               initialData={initialData}
-              theme="dark"
+              theme={theme}
             />
           </Suspense>
         )}

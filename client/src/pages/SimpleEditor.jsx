@@ -5,6 +5,7 @@ import Editor from '../components/editor/Editor.jsx';
 import DrawingCanvas from '../components/drawing/DrawingCanvas.jsx';
 import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
+import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import { useAutosave } from '../hooks/useAutosave.js';
 
 const BackArrow = () => (
@@ -42,18 +43,21 @@ export default function SimpleEditor() {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0c' }}>
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#7c6cff,#4b3fd6 55%,transparent)' }} />
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+      <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)' }} />
 
       {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', borderBottom: '1px solid var(--border-faint)' }}>
         <button
           onClick={() => navigate('/simple')}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: '#7a7a85', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <BackArrow /> NOTES
         </button>
-        <SaveStatus status={saveStatus} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ThemeToggle />
+          <SaveStatus status={saveStatus} />
+        </div>
       </div>
 
       <style>{`
@@ -67,7 +71,7 @@ export default function SimpleEditor() {
 
       {/* Editor area */}
       <div className="simple-editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 780, width: '100%', margin: '0 auto' }}>
-        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: '#55555f', marginBottom: 10 }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-label)', marginBottom: 10 }}>
           UNTITLED · NOTE
         </div>
         <input
@@ -79,7 +83,7 @@ export default function SimpleEditor() {
             fontFamily: "'Space Grotesk', sans-serif",
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            color: '#f4f4f6',
+            color: 'var(--text)',
             background: 'transparent',
             border: 'none',
             outline: 'none',

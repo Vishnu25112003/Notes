@@ -9,22 +9,22 @@ export default function Breadcrumbs({ section, pages, currentPageId }) {
   };
 
   const crumbs = buildCrumbs(currentPageId);
-  const sep = <span style={{ color: '#3a3a42', margin: '0 2px' }}>/</span>;
+  const sep = <span style={{ color: 'var(--separator)', margin: '0 2px' }}>/</span>;
 
   return (
-    <nav style={{ display: 'flex', alignItems: 'center', gap: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: '#7a7a85', flexWrap: 'wrap' }}>
+    <nav style={{ display: 'flex', alignItems: 'center', gap: 0, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
       <Link
         to="/sections"
-        style={{ color: '#7a7a85', textDecoration: 'none' }}
-        onMouseEnter={e => e.currentTarget.style.color = '#c8c8d0'}
-        onMouseLeave={e => e.currentTarget.style.color = '#7a7a85'}
+        style={{ color: 'var(--text-dim)', textDecoration: 'none' }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-mid)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
       >SECTIONS</Link>
       {sep}
       <Link
         to={`/sections/${section?._id}`}
-        style={{ color: '#7a7a85', textDecoration: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        onMouseEnter={e => e.currentTarget.style.color = '#c8c8d0'}
-        onMouseLeave={e => e.currentTarget.style.color = '#7a7a85'}
+        style={{ color: 'var(--text-dim)', textDecoration: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-mid)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
       >
         {section?.title}
       </Link>
@@ -34,12 +34,12 @@ export default function Breadcrumbs({ section, pages, currentPageId }) {
           {i < crumbs.length - 1 ? (
             <Link
               to={`/sections/${section?._id}/pages/${p._id}`}
-              style={{ color: '#7a7a85', textDecoration: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#c8c8d0'}
-              onMouseLeave={e => e.currentTarget.style.color = '#7a7a85'}
+              style={{ color: 'var(--text-dim)', textDecoration: 'none', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-mid)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
             >{p.title}</Link>
           ) : (
-            <span style={{ color: '#f4f4f6', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+            <span style={{ color: 'var(--text)', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
           )}
         </span>
       ))}

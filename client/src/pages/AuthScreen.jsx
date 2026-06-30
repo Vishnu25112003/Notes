@@ -10,22 +10,10 @@ import {
   loginTotp,
 } from '../api/auth.js';
 
-const DARK = {
-  bg: '#0a0a0c',
-  card: '#111116',
-  border: '#2a2a31',
-  accent: '#7c6cff',
-  accentHover: '#6b5ce7',
-  text: '#f4f4f6',
-  muted: '#55555f',
-  error: '#ec5d8a',
-  success: '#5be3a0',
-};
-
 const styles = {
   page: {
     minHeight: '100vh',
-    background: DARK.bg,
+    background: 'var(--bg)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -33,28 +21,28 @@ const styles = {
     fontFamily: "'Space Grotesk', 'JetBrains Mono', monospace",
   },
   card: {
-    background: DARK.card,
-    border: `1px solid ${DARK.border}`,
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
     borderRadius: '16px',
     padding: '40px 32px',
     width: '100%',
     maxWidth: '420px',
   },
   title: {
-    color: DARK.text,
+    color: 'var(--text)',
     fontSize: '22px',
     fontWeight: 700,
     marginBottom: '6px',
     margin: 0,
   },
   subtitle: {
-    color: DARK.muted,
+    color: 'var(--text-label)',
     fontSize: '14px',
     margin: '8px 0 28px',
   },
   label: {
     display: 'block',
-    color: DARK.muted,
+    color: 'var(--text-label)',
     fontSize: '12px',
     fontWeight: 600,
     letterSpacing: '0.06em',
@@ -63,11 +51,11 @@ const styles = {
   },
   input: {
     width: '100%',
-    background: '#18181f',
-    border: `1px solid ${DARK.border}`,
+    background: 'var(--input-bg)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '12px 14px',
-    color: DARK.text,
+    color: 'var(--text)',
     fontSize: '15px',
     outline: 'none',
     boxSizing: 'border-box',
@@ -75,11 +63,11 @@ const styles = {
   },
   btn: {
     width: '100%',
-    background: DARK.accent,
+    background: 'var(--accent)',
     border: 'none',
     borderRadius: '8px',
     padding: '13px',
-    color: '#fff',
+    color: 'var(--accent-fg)',
     fontSize: '15px',
     fontWeight: 600,
     cursor: 'pointer',
@@ -90,41 +78,41 @@ const styles = {
   btnSecondary: {
     width: '100%',
     background: 'transparent',
-    border: `1px solid ${DARK.border}`,
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '12px',
-    color: DARK.muted,
+    color: 'var(--text-label)',
     fontSize: '14px',
     cursor: 'pointer',
     marginTop: '10px',
     fontFamily: 'inherit',
   },
   error: {
-    color: DARK.error,
+    color: 'var(--error)',
     fontSize: '13px',
     marginTop: '10px',
     padding: '10px 12px',
-    background: 'rgba(236,93,138,0.08)',
+    background: 'var(--error-bg)',
     borderRadius: '6px',
-    border: `1px solid rgba(236,93,138,0.2)`,
+    border: '1px solid var(--error-border)',
   },
   info: {
-    color: DARK.muted,
+    color: 'var(--text-label)',
     fontSize: '13px',
     marginTop: '10px',
     padding: '10px 12px',
     background: 'rgba(124,108,255,0.06)',
     borderRadius: '6px',
-    border: `1px solid rgba(124,108,255,0.15)`,
+    border: '1px solid rgba(124,108,255,0.15)',
   },
   divider: {
-    color: DARK.muted,
+    color: 'var(--text-label)',
     fontSize: '13px',
     textAlign: 'center',
     margin: '18px 0 8px',
   },
   link: {
-    color: DARK.accent,
+    color: 'var(--accent)',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -144,9 +132,9 @@ const styles = {
   secret: {
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: '12px',
-    color: DARK.muted,
-    background: '#18181f',
-    border: `1px solid ${DARK.border}`,
+    color: 'var(--text-label)',
+    background: 'var(--input-bg)',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
     padding: '8px 12px',
     wordBreak: 'break-all',
@@ -163,10 +151,10 @@ const styles = {
   otpInput: {
     width: '42px',
     height: '52px',
-    background: '#18181f',
-    border: `1px solid ${DARK.border}`,
+    background: 'var(--input-bg)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: DARK.text,
+    color: 'var(--text)',
     fontSize: '20px',
     fontWeight: 700,
     textAlign: 'center',
@@ -179,7 +167,7 @@ const styles = {
     margin: '16px 0 8px',
   },
   attempts: {
-    color: DARK.error,
+    color: 'var(--error)',
     fontSize: '12px',
     textAlign: 'center',
     marginTop: '8px',
@@ -245,7 +233,7 @@ function OtpInputs({ value, onChange, disabled }) {
           disabled={disabled}
           style={{
             ...styles.otpInput,
-            borderColor: digits[i] ? DARK.accent : DARK.border,
+            borderColor: digits[i] ? 'var(--accent)' : 'var(--border)',
           }}
         />
       ))}
@@ -255,7 +243,7 @@ function OtpInputs({ value, onChange, disabled }) {
 
 export default function AuthScreen() {
   const { login } = useAuth();
-  const [view, setView] = useState('entry'); // entry | register-webauthn | register-totp | login-webauthn | login-totp
+  const [view, setView] = useState('entry');
   const [username, setUsername] = useState('');
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
@@ -272,8 +260,6 @@ export default function AuthScreen() {
   }, []);
 
   function clearMessages() { setError(null); setInfo(null); }
-
-  // ── Entry ───────────────────────────────────────────────────────────────────
 
   async function handleEntrySubmit(e) {
     e.preventDefault();
@@ -293,7 +279,6 @@ export default function AuthScreen() {
       }
     } catch (err) {
       if (err === 'User not found' || String(err).includes('not found')) {
-        // New user
         setIsNewUser(true);
         setView('register-webauthn');
       } else {
@@ -303,8 +288,6 @@ export default function AuthScreen() {
       setLoading(false);
     }
   }
-
-  // ── Registration — WebAuthn ─────────────────────────────────────────────────
 
   async function handleRegisterBiometric() {
     clearMessages();
@@ -339,8 +322,6 @@ export default function AuthScreen() {
     }
   }
 
-  // ── Registration — TOTP verify ──────────────────────────────────────────────
-
   async function handleRegisterTotpVerify(e) {
     e.preventDefault();
     if (code.length < 6) return setError('Enter the 6-digit code from your Authenticator app.');
@@ -356,8 +337,6 @@ export default function AuthScreen() {
       setLoading(false);
     }
   }
-
-  // ── Login — WebAuthn ────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (view !== 'login-webauthn') return;
@@ -390,8 +369,6 @@ export default function AuthScreen() {
     }
   }
 
-  // ── Login — TOTP ────────────────────────────────────────────────────────────
-
   async function handleLoginTotp(e) {
     e.preventDefault();
     if (code.length < 6) return setError('Enter the 6-digit code from your Authenticator app.');
@@ -408,13 +385,10 @@ export default function AuthScreen() {
     }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <div style={styles.page}>
       <div style={styles.card}>
 
-        {/* ENTRY */}
         {view === 'entry' && (
           <form onSubmit={handleEntrySubmit}>
             <p style={styles.title}>Notespace</p>
@@ -436,7 +410,6 @@ export default function AuthScreen() {
           </form>
         )}
 
-        {/* REGISTER — WEBAUTHN */}
         {view === 'register-webauthn' && (
           <div>
             <p style={styles.title}>Welcome, {username}</p>
@@ -448,7 +421,7 @@ export default function AuthScreen() {
                   Your device supports fingerprint / Face ID. Register it now for instant login.
                 </p>
                 {error && <div style={styles.error}>{error}</div>}
-                {info && <div style={{ ...styles.info, color: DARK.success }}>{info}</div>}
+                {info && <div style={{ ...styles.info, color: 'var(--success)' }}>{info}</div>}
                 <button style={styles.btn} onClick={handleRegisterBiometric} disabled={loading}>
                   {loading ? 'Registering…' : 'Register Biometric'}
                 </button>
@@ -474,7 +447,6 @@ export default function AuthScreen() {
           </div>
         )}
 
-        {/* REGISTER — TOTP */}
         {view === 'register-totp' && (
           <form onSubmit={handleRegisterTotpVerify}>
             <p style={styles.title}>Set up Authenticator</p>
@@ -495,7 +467,6 @@ export default function AuthScreen() {
           </form>
         )}
 
-        {/* LOGIN — WEBAUTHN */}
         {view === 'login-webauthn' && (
           <div>
             <p style={styles.title}>Welcome back</p>
@@ -521,12 +492,11 @@ export default function AuthScreen() {
           </div>
         )}
 
-        {/* LOGIN — TOTP */}
         {view === 'login-totp' && (
           <form onSubmit={handleLoginTotp}>
             <p style={styles.title}>Authenticator Code</p>
             <p style={styles.subtitle}>
-              Open Google Authenticator and enter the code for <strong style={{ color: DARK.text }}>{username}</strong>
+              Open Google Authenticator and enter the code for <strong style={{ color: 'var(--text)' }}>{username}</strong>
             </p>
             <label style={styles.label}>6-digit code</label>
             <OtpInputs value={code} onChange={setCode} disabled={loading} />

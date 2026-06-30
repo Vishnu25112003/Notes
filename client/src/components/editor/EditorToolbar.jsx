@@ -3,7 +3,7 @@ import { uploadImage } from '../../api/upload.js';
 import { createDrawing } from '../../api/drawings.js';
 
 const Divider = () => (
-  <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,.1)', margin: '0 6px', display: 'inline-block' }} />
+  <span style={{ width: 1, height: 18, background: 'var(--divider)', margin: '0 6px', display: 'inline-block' }} />
 );
 
 export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
@@ -19,7 +19,7 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
         borderRadius: 5,
         border: 'none',
         background: active ? 'rgba(124,108,255,.16)' : 'transparent',
-        color: active ? '#c8c8d0' : '#7a7a85',
+        color: active ? 'var(--text-mid)' : 'var(--text-dim)',
         cursor: 'pointer',
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 12,
@@ -28,8 +28,8 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
         gap: 5,
         transition: 'color 0.1s, background 0.1s',
       }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#c8c8d0'; }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#7a7a85'; }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-mid)'; }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--text-dim)'; }}
     >
       {children}
     </button>
@@ -59,8 +59,8 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
       alignItems: 'center',
       flexWrap: 'wrap',
       gap: 2,
-      background: '#121216',
-      border: '1px solid #26262d',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
       borderRadius: 9,
       padding: '7px 10px',
       margin: '20px 0',
@@ -92,9 +92,9 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
       <Divider />
       <button
         onClick={() => fileRef.current?.click()}
-        style={{ padding: '6px 9px', borderRadius: 5, border: 'none', background: 'transparent', color: '#7a7a85', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-        onMouseEnter={e => e.currentTarget.style.color = '#c8c8d0'}
-        onMouseLeave={e => e.currentTarget.style.color = '#7a7a85'}
+        style={{ padding: '6px 9px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-mid)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -106,7 +106,7 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
       <button
         onClick={handleInsertDrawing}
-        style={{ padding: '6px 9px', borderRadius: 5, border: 'none', background: 'transparent', color: '#7c6cff', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+        style={{ padding: '6px 9px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9"/>
