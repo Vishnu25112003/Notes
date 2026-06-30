@@ -20,14 +20,16 @@ const app = express();
 
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map(o => o.trim());
+  .map(o => o.trim().replace(/\/$/, ''));
 
 app.use(cors({
   origin: (origin, cb) => {
-    // allow same-origin / curl / Postman (no origin header)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    const normalized = origin?.replace(/\/$/, '');
+    if (!origin || allowedOrigins.includes(normalized)) return cb(null, true);
+    console.warn(`CORS blocked: ${origin} | allowed: ${allowedOrigins.join(', ')}`);
     cb(null, false);
   },
+  credentials: true,
 }));
 app.use(express.json({ limit: '20mb' }));
 
