@@ -26,7 +26,7 @@ app.use(cors({
   origin: (origin, cb) => {
     // allow same-origin / curl / Postman (no origin header)
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    cb(new Error(`CORS: origin ${origin} not allowed`));
+    cb(null, false);
   },
 }));
 app.use(express.json({ limit: '20mb' }));
