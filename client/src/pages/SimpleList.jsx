@@ -132,14 +132,14 @@ export default function SimpleList() {
             <button
               onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}
               style={{
-                position: 'absolute', top: 10, right: 10,
-                background: 'none', border: 'none', color: '#55555f', cursor: 'pointer',
-                fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4,
-                opacity: 0, transition: 'opacity 0.15s',
+                position: 'absolute', top: 8, right: 8,
+                background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)',
+                color: '#7a7a85', cursor: 'pointer',
+                fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
               }}
               className="delete-btn"
-              onMouseEnter={e => e.currentTarget.style.color = '#ec5d8a'}
-              onMouseLeave={e => e.currentTarget.style.color = '#55555f'}
+              onMouseEnter={e => { e.currentTarget.style.color = '#ec5d8a'; e.currentTarget.style.background = 'rgba(236,93,138,.12)'; e.currentTarget.style.borderColor = 'rgba(236,93,138,.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#7a7a85'; e.currentTarget.style.background = 'rgba(255,255,255,.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)'; }}
             >×</button>
           </div>
         ))}
@@ -174,7 +174,11 @@ export default function SimpleList() {
         </div>
       )}
 
-      <style>{`.delete-btn { opacity: 0; } div:hover > .delete-btn { opacity: 1; }`}</style>
+      <style>{`
+        .delete-btn { opacity: 0; transition: opacity 0.15s; }
+        div:hover > .delete-btn { opacity: 1; }
+        @media (hover: none) { .delete-btn { opacity: 1; } }
+      `}</style>
 
       {deleteTarget && (
         <ConfirmDialog
