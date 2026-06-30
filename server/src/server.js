@@ -11,6 +11,8 @@ import pagesRouter from './routes/pages.js';
 import drawingsRouter from './routes/drawings.js';
 import uploadRouter from './routes/upload.js';
 import searchRouter from './routes/search.js';
+import authRouter from './routes/auth.js';
+import { requireAuth } from './middleware/requireAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,12 +36,14 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' }));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
-app.use('/api/notes', notesRouter);
-app.use('/api/sections', sectionsRouter);
-app.use('/api/pages', pagesRouter);
-app.use('/api/drawings', drawingsRouter);
-app.use('/api/upload', uploadRouter);
-app.use('/api/search', searchRouter);
+app.use('/api/auth', authRouter);
+
+app.use('/api/notes',    requireAuth, notesRouter);
+app.use('/api/sections', requireAuth, sectionsRouter);
+app.use('/api/pages',    requireAuth, pagesRouter);
+app.use('/api/drawings', requireAuth, drawingsRouter);
+app.use('/api/upload',   requireAuth, uploadRouter);
+app.use('/api/search',   requireAuth, searchRouter);
 
 app.use(errorHandler);
 

@@ -20,3 +20,7 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: RP_ID
+        value: notes-4yey.onrender.com
+      - key: RP_ORIGIN
+        value: https://notes-4yey.onrender.com
