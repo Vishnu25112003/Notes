@@ -72,7 +72,11 @@ export async function webAuthnRegisterOptions(req, res) {
   });
 
   setChallenge(`reg:${username}`, options.challenge);
-  res.json({ options });
+  // Strip rpId from options: mobile browsers (Chrome Android, iOS Safari) throw a
+  // SecurityError when rp.id is explicitly set on shared-hosting domains (*.onrender.com).
+  // Omitting it makes the browser default to the current page's domain silently.
+  const clientOptions = { ...options, rp: { name: options.rp.name } };
+  res.json({ options: clientOptions });
 }
 
 export async function webAuthnRegisterVerify(req, res) {
@@ -188,7 +192,8 @@ export async function webAuthnAuthOptions(req, res) {
   });
 
   setChallenge(`auth:${username}`, options.challenge);
-  res.json({ options });
+  const { rpId: _rpId, ...clientOptions } = options;
+  res.json({ options: clientOptions });
 }
 
 export async function webAuthnAuthVerify(req, res) {
@@ -308,7 +313,8 @@ export async function addDeviceOptions(req, res) {
   });
 
   setChallenge(`adddev:${username}`, options.challenge);
-  res.json({ options });
+  const clientOptions = { ...options, rp: { name: options.rp.name } };
+  res.json({ options: clientOptions });
 }
 
 export async function addDeviceVerify(req, res) {

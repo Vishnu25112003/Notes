@@ -314,10 +314,6 @@ export default function AuthScreen() {
       setInfo('Biometric registered. Now set up your Authenticator app.');
       await setupTotp();
     } catch (err) {
-      if (isRpIdError(err)) {
-        await handleSkipBiometric();
-        return;
-      }
       setError(String(err));
       setLoading(false);
     }
