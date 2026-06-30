@@ -2,7 +2,7 @@ services:
   - type: web
     name: notespace-backend
     runtime: node
-    rootDir: .
+    rootDir: server
     buildCommand: npm run build
     startCommand: npm start
     envVars:
