@@ -186,6 +186,16 @@ const styles = {
   },
 };
 
+function isRpIdError(err) {
+  const msg = String(err).toLowerCase();
+  return (
+    msg.includes('invalid for this domain') ||
+    msg.includes('registrable domain') ||
+    msg.includes('relying party') ||
+    (msg.includes('rp') && msg.includes('domain'))
+  );
+}
+
 async function checkWebAuthnSupport() {
   if (typeof window.PublicKeyCredential === 'undefined') return false;
   if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== 'function') return false;
@@ -304,6 +314,10 @@ export default function AuthScreen() {
       setInfo('Biometric registered. Now set up your Authenticator app.');
       await setupTotp();
     } catch (err) {
+      if (isRpIdError(err)) {
+        await handleSkipBiometric();
+        return;
+      }
       setError(String(err));
       setLoading(false);
     }
@@ -361,6 +375,12 @@ export default function AuthScreen() {
       const data = await authenticateWebAuthn(username.trim());
       login(data.token, data.username);
     } catch (err) {
+      if (isRpIdError(err)) {
+        setCode('');
+        setView('login-totp');
+        setLoading(false);
+        return;
+      }
       const fails = webAuthnFailures + 1;
       setWebAuthnFailures(fails);
       if (fails >= 3 || String(err).includes('maxAttempts')) {
