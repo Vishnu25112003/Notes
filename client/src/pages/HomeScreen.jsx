@@ -55,6 +55,29 @@ export default function HomeScreen() {
     <div className="min-h-screen flex flex-col" style={GRID_BG}>
       <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)' }} />
 
+      {/* Top nav bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', borderBottom: '1px solid var(--border-faint)' }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--text-muted)' }}>
+          @{username}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => { setDeviceStatus(null); setDeviceError(null); setDeviceName(''); setShowDeviceModal(true); }}
+            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 11px', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+            title="Add this device for biometric login"
+          >
+            + Add Device
+          </button>
+          <ThemeToggle />
+          <button
+            onClick={logout}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div
           style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.3em', color: 'var(--accent)', marginBottom: 14 }}
@@ -63,33 +86,12 @@ export default function HomeScreen() {
         </div>
 
         <div
-          style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px,6vw,52px)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1.05 }}
+          style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px,6vw,52px)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1.05, marginBottom: 40 }}
         >
           Notespace
         </div>
 
-        {/* User bar */}
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginBottom: 8, marginTop: -4 }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--text-label)' }}>
-            @{username}
-          </span>
-          <button
-            onClick={() => { setDeviceStatus(null); setDeviceError(null); setDeviceName(''); setShowDeviceModal(true); }}
-            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', color: 'var(--text-label)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
-            title="Add this device for biometric login"
-          >
-            + Add Device
-          </button>
-          <ThemeToggle />
-          <button
-            onClick={logout}
-            style={{ background: 'none', border: 'none', color: 'var(--text-label)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Sign out
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl mt-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
           <button
             onClick={() => navigate('/simple')}
             className="text-left group"
