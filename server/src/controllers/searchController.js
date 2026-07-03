@@ -6,11 +6,11 @@ export async function search(req, res) {
   if (!q) return res.json([]);
 
   const [notes, pages] = await Promise.all([
-    SimpleNote.find({ $text: { $search: q } }, { score: { $meta: 'textScore' } })
+    SimpleNote.find({ userId: req.user.id, $text: { $search: q } }, { score: { $meta: 'textScore' } })
       .sort({ score: { $meta: 'textScore' } })
       .limit(20)
       .select('title searchText'),
-    Page.find({ $text: { $search: q } }, { score: { $meta: 'textScore' } })
+    Page.find({ userId: req.user.id, $text: { $search: q } }, { score: { $meta: 'textScore' } })
       .sort({ score: { $meta: 'textScore' } })
       .limit(20)
       .select('title searchText sectionId'),
