@@ -62,7 +62,7 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
       border: '1px solid var(--border)',
       borderRadius: 9,
       padding: '7px 10px',
-      margin: '20px 0',
+      margin: '14px 16px',
     }}>
       {btn(editor.isActive('heading', { level: 1 }), () => editor.chain().focus().toggleHeading({ level: 1 }).run(), 'H1')}
       {btn(editor.isActive('heading', { level: 2 }), () => editor.chain().focus().toggleHeading({ level: 2 }).run(), 'H2')}
