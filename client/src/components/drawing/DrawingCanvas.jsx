@@ -7,8 +7,6 @@ const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
 );
 
-const HEADER_HEIGHT = 57;
-
 const PencilIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9"/>
@@ -34,7 +32,7 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
   }, [drawingId]);
 
   const handleSave = useCallback(async () => {
-    if (!excalidrawAPI || !drawingId) return;
+    if (!excalidrawAPI || !drawingId) return false;
     setSaving(true);
     try {
       const elements = excalidrawAPI.getSceneElements();
@@ -45,21 +43,26 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
 
       const { exportToBlob } = await import('@excalidraw/excalidraw');
       const blob = await exportToBlob({ elements, mimeType: 'image/png', appState, files });
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result.split(',')[1];
-        const updated = await exportDrawing(drawingId, { pngBase64: base64 });
-        if (onSaved) onSaved(updated.exportUrl);
-      };
-      reader.readAsDataURL(blob);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      const updated = await exportDrawing(drawingId, { pngBase64: base64 });
+      window.dispatchEvent(new CustomEvent('drawing-saved', {
+        detail: { drawingId, exportUrl: updated.exportUrl },
+      }));
+      if (onSaved) onSaved(updated.exportUrl);
+      return true;
     } catch (e) {
       console.error('Drawing save error:', e);
+      alert('Could not save the drawing. Please try again.');
+      return false;
     } finally {
       setSaving(false);
     }
   }, [excalidrawAPI, drawingId, onSaved]);
-
-  const canvasHeight = typeof window !== 'undefined' ? window.innerHeight - HEADER_HEIGHT : 600;
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -67,7 +70,8 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', height: HEADER_HEIGHT, flexShrink: 0,
+          flexWrap: 'wrap', gap: 8,
+          padding: '10px 14px', flexShrink: 0,
           borderBottom: '1px solid var(--border-faint)',
         }}
       >
@@ -75,26 +79,26 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
           <span style={{ color: 'var(--accent)' }}><PencilIcon /></span>
           Drawing
         </span>
-        <div style={{ display: 'flex', gap: 9, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
+            style={{ padding: '8px 12px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1, whiteSpace: 'nowrap' }}
           >{saving ? 'SAVING…' : 'SAVE'}</button>
           <button
-            onClick={async () => { await handleSave(); onClose(); }}
+            onClick={async () => { const ok = await handleSave(); if (ok) onClose(); }}
             disabled={saving}
-            style={{ padding: '8px 15px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1 }}
+            style={{ padding: '8px 12px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: 'var(--accent-fg)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1, whiteSpace: 'nowrap' }}
           >SAVE &amp; CLOSE</button>
           <button
             onClick={onClose}
-            style={{ padding: '8px 15px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', cursor: 'pointer' }}
+            style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mid)', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >CLOSE</button>
         </div>
       </div>
 
       {/* Canvas */}
-      <div style={{ width: '100%', height: canvasHeight, position: 'relative' }}>
+      <div style={{ width: '100%', flex: 1, minHeight: 0, position: 'relative' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-label)' }}>
             LOADING CANVAS…

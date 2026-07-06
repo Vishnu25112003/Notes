@@ -54,10 +54,9 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
   };
 
   return (
-    <div style={{
+    <div className="editor-toolbar" style={{
       display: 'flex',
       alignItems: 'center',
-      flexWrap: 'wrap',
       gap: 2,
       background: 'var(--surface)',
       border: '1px solid var(--border)',

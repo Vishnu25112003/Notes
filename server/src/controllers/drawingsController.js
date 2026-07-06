@@ -36,17 +36,22 @@ export async function exportDrawing(req, res) {
   const { pngBase64 } = req.body;
   if (!pngBase64) return res.status(400).json({ error: 'pngBase64 required' });
 
-  const result = await cloudinary.uploader.upload(`data:image/png;base64,${pngBase64}`, {
-    folder: 'notes-drawings',
-  });
+  try {
+    const result = await cloudinary.uploader.upload(`data:image/png;base64,${pngBase64}`, {
+      folder: 'notes-drawings',
+    });
 
-  const drawing = await Drawing.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    { exportUrl: result.secure_url },
-    { new: true }
-  );
-  if (!drawing) return res.status(404).json({ error: 'Not found' });
-  res.json(drawing);
+    const drawing = await Drawing.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      { exportUrl: result.secure_url },
+      { new: true }
+    );
+    if (!drawing) return res.status(404).json({ error: 'Not found' });
+    res.json(drawing);
+  } catch (err) {
+    console.error('Drawing export failed:', err);
+    res.status(500).json({ error: 'Drawing export failed' });
+  }
 }
 
 export async function deleteDrawing(req, res) {

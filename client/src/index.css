@@ -77,11 +77,12 @@ body {
   font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text-body);
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -119,4 +120,16 @@ body {
 .ProseMirror u { text-decoration: underline; }
 .ProseMirror img { max-width: 100%; border-radius: 8px; margin: 0.75rem 0; border: 1px solid var(--border); }
 .ProseMirror > * + * { margin-top: 0.25rem; }
-.ProseMirror code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #9b93ff; background: rgba(124,108,255,.12); padding: 0.1em 0.4em; border-radius: 4px; }
+.ProseMirror code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: var(--accent-text); background: rgba(124,108,255,.12); padding: 0.1em 0.4em; border-radius: 4px; }
+
+.editor-toolbar { flex-wrap: wrap; }
+.editor-toolbar button { white-space: nowrap; }
+@media (max-width: 767px) {
+  .editor-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .editor-toolbar::-webkit-scrollbar { display: none; }
+  .editor-toolbar > * { flex-shrink: 0; }
+}

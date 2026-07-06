@@ -20,7 +20,7 @@ export const DrawingBlock = Node.create({
     return ({ node, editor }) => {
       const dom = document.createElement('div');
       dom.className = 'drawing-block-wrapper';
-      dom.style.cssText = 'border:1px solid #333;border-radius:8px;overflow:hidden;margin:0.5rem 0;cursor:pointer;';
+      dom.style.cssText = 'border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:0.5rem 0;cursor:pointer;';
 
       if (node.attrs.exportUrl) {
         const img = document.createElement('img');
@@ -29,7 +29,7 @@ export const DrawingBlock = Node.create({
         dom.appendChild(img);
       } else {
         const placeholder = document.createElement('div');
-        placeholder.style.cssText = 'padding:2rem;text-align:center;color:#666;background:#1a1a1a;';
+        placeholder.style.cssText = 'padding:2rem;text-align:center;color:var(--text-dim);background:var(--surface);';
         placeholder.textContent = '✏️ Drawing (click to edit)';
         dom.appendChild(placeholder);
       }

@@ -28,7 +28,7 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
       onChange && onChange(editor.getJSON());
     },
     editorProps: {
-      attributes: { class: 'tiptap prose-invert min-h-[200px] px-1 py-2 focus:outline-none' },
+      attributes: { class: 'tiptap min-h-[200px] px-1 py-2 focus:outline-none' },
     },
   });
 
@@ -42,8 +42,30 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
     return () => el.removeEventListener('open-drawing', handler);
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const handler = (e) => {
+      const { drawingId, exportUrl } = e.detail;
+      const { state, view } = editor;
+      const tr = state.tr;
+      let changed = false;
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === 'drawingBlock' && node.attrs.drawingId === drawingId) {
+          tr.setNodeMarkup(pos, undefined, { ...node.attrs, exportUrl });
+          changed = true;
+        }
+      });
+      if (changed) view.dispatch(tr);
+    };
+    window.addEventListener('drawing-saved', handler);
+    return () => window.removeEventListener('drawing-saved', handler);
+  }, [editor]);
+
   return (
-    <div className="flex flex-col flex-1 border border-white/10 rounded-xl overflow-hidden bg-[#161616]">
+    <div
+      className="flex flex-col flex-1 rounded-xl overflow-hidden"
+      style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+    >
       <EditorToolbar editor={editor} pageId={pageId} onOpenDrawing={onOpenDrawing} />
       <div className="flex-1 overflow-y-auto px-4 py-3">
         <EditorContent editor={editor} />

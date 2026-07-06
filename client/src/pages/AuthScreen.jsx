@@ -144,12 +144,15 @@ const styles = {
   },
   otpRow: {
     display: 'flex',
-    gap: '8px',
+    gap: '6px',
     justifyContent: 'center',
     margin: '8px 0',
+    width: '100%',
   },
   otpInput: {
-    width: '42px',
+    flex: '1 1 0',
+    minWidth: 0,
+    maxWidth: '42px',
     height: '52px',
     background: 'var(--input-bg)',
     border: '1px solid var(--border)',
