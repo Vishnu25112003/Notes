@@ -55,6 +55,17 @@ export async function exportDrawing(req, res) {
 }
 
 export async function deleteDrawing(req, res) {
-  await Drawing.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+  const drawing = await Drawing.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+  if (drawing?.exportUrl) {
+    // exportUrl looks like .../upload/v123/notes-drawings/<id>.png — recover the public_id
+    const match = drawing.exportUrl.match(/\/(notes-drawings\/[^/.]+)\.\w+$/);
+    if (match) {
+      try {
+        await cloudinary.uploader.destroy(match[1]);
+      } catch (err) {
+        console.error('Cloudinary cleanup failed:', err);
+      }
+    }
+  }
   res.json({ ok: true });
 }
