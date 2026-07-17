@@ -6,7 +6,7 @@ const Divider = () => (
   <span style={{ width: 1, height: 18, background: 'var(--divider)', margin: '0 6px', display: 'inline-block' }} />
 );
 
-export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
+export default function EditorToolbar({ editor, pageId, onOpenDrawing, allowDrawings = true }) {
   const fileRef = useRef(null);
 
   if (!editor) return null;
@@ -103,7 +103,7 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
         Image
       </button>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
-      <button
+      {allowDrawings && <button
         onClick={handleInsertDrawing}
         style={{ padding: '6px 9px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
       >
@@ -112,7 +112,7 @@ export default function EditorToolbar({ editor, pageId, onOpenDrawing }) {
           <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
         </svg>
         Draw
-      </button>
+      </button>}
     </div>
   );
 }

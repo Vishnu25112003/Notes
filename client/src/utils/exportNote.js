@@ -118,23 +118,3 @@ export async function exportPdf(title, content) {
     document.body.removeChild(container);
   }
 }
-
-// Native share sheet where available, clipboard fallback otherwise.
-// Returns 'shared' | 'copied' | 'failed'
-export async function shareNote(title, content) {
-  const text = noteToText(title, content);
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: title || 'Untitled', text });
-      return 'shared';
-    } catch (err) {
-      if (err?.name === 'AbortError') return 'shared';
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    return 'copied';
-  } catch {
-    return 'failed';
-  }
-}

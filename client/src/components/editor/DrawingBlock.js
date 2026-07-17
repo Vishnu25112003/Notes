@@ -7,6 +7,9 @@ export const DrawingBlock = Node.create({
   name: 'drawingBlock',
   group: 'block',
   atom: true,
+  addOptions() {
+    return { interactive: true };
+  },
   addAttributes() {
     return {
       drawingId: { default: null },
@@ -25,6 +28,7 @@ export const DrawingBlock = Node.create({
     return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'drawingBlock' })];
   },
   addNodeView() {
+    const { interactive } = this.options;
     return ({ node, editor, getPos }) => {
       let currentNode = node;
 
@@ -50,7 +54,7 @@ export const DrawingBlock = Node.create({
         } else {
           const placeholder = document.createElement('div');
           placeholder.style.cssText = 'padding:2rem;text-align:center;color:var(--text-dim);background:var(--surface);';
-          placeholder.textContent = '✏️ Drawing (click to edit)';
+          placeholder.textContent = interactive ? '✏️ Drawing (click to edit)' : '✏️ Drawing';
           content.appendChild(placeholder);
         }
       };
@@ -59,64 +63,70 @@ export const DrawingBlock = Node.create({
       const openDrawing = () => {
         dom.dispatchEvent(new CustomEvent('open-drawing', { detail: { drawingId: currentNode.attrs.drawingId }, bubbles: true }));
       };
-      content.addEventListener('click', openDrawing);
+      if (interactive) {
+        content.addEventListener('click', openDrawing);
+      } else {
+        content.style.cursor = 'default';
+      }
 
-      // Floating controls: edit + delete
-      const controls = document.createElement('div');
-      controls.style.cssText = 'position:absolute;top:6px;right:6px;display:flex;gap:4px;z-index:2;';
-      const makeBtn = (icon, title, danger) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.title = title;
-        b.innerHTML = icon;
-        b.style.cssText = `display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:${danger ? 'var(--error)' : 'var(--text-mid)'};cursor:pointer;opacity:0.9;`;
-        return b;
-      };
-      const editBtn = makeBtn(EDIT_ICON, 'Edit drawing', false);
-      editBtn.addEventListener('click', (e) => { e.stopPropagation(); openDrawing(); });
-      const deleteBtn = makeBtn(TRASH_ICON, 'Delete drawing', true);
-      deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dom.dispatchEvent(new CustomEvent('delete-drawing', { detail: { drawingId: currentNode.attrs.drawingId }, bubbles: true }));
-      });
-      controls.appendChild(editBtn);
-      controls.appendChild(deleteBtn);
-      dom.appendChild(controls);
-
-      // Resize handle (bottom-right) — pointer events work for both mouse and touch
-      const handle = document.createElement('div');
-      handle.title = 'Drag to resize';
-      handle.style.cssText = 'position:absolute;bottom:2px;right:2px;width:22px;height:22px;display:flex;align-items:flex-end;justify-content:flex-end;cursor:nwse-resize;touch-action:none;z-index:2;padding:0 3px 3px 0;';
-      handle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v6h-6"/><path d="M21 11l-10 10"/></svg>`;
-      handle.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handle.setPointerCapture(e.pointerId);
-        const startX = e.clientX;
-        const startWidth = dom.getBoundingClientRect().width;
-        const parentWidth = dom.parentElement ? dom.parentElement.getBoundingClientRect().width : startWidth;
-        const onMove = (ev) => {
-          const pct = Math.min(100, Math.max(20, ((startWidth + ev.clientX - startX) / parentWidth) * 100));
-          dom.style.width = pct.toFixed(1) + '%';
+      // Floating controls + resize handle only for interactive editors
+      if (interactive) {
+        const controls = document.createElement('div');
+        controls.style.cssText = 'position:absolute;top:6px;right:6px;display:flex;gap:4px;z-index:2;';
+        const makeBtn = (icon, title, danger) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.title = title;
+          b.innerHTML = icon;
+          b.style.cssText = `display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:${danger ? 'var(--error)' : 'var(--text-mid)'};cursor:pointer;opacity:0.9;`;
+          return b;
         };
-        const onUp = () => {
-          handle.removeEventListener('pointermove', onMove);
-          handle.removeEventListener('pointerup', onUp);
-          handle.removeEventListener('pointercancel', onUp);
-          const width = dom.style.width;
-          if (typeof getPos === 'function' && width && width !== currentNode.attrs.width) {
-            const pos = getPos();
-            if (typeof pos === 'number') {
-              const tr = editor.view.state.tr.setNodeMarkup(pos, undefined, { ...currentNode.attrs, width });
-              editor.view.dispatch(tr);
+        const editBtn = makeBtn(EDIT_ICON, 'Edit drawing', false);
+        editBtn.addEventListener('click', (e) => { e.stopPropagation(); openDrawing(); });
+        const deleteBtn = makeBtn(TRASH_ICON, 'Delete drawing', true);
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dom.dispatchEvent(new CustomEvent('delete-drawing', { detail: { drawingId: currentNode.attrs.drawingId }, bubbles: true }));
+        });
+        controls.appendChild(editBtn);
+        controls.appendChild(deleteBtn);
+        dom.appendChild(controls);
+
+        // Resize handle (bottom-right) — pointer events work for both mouse and touch
+        const handle = document.createElement('div');
+        handle.title = 'Drag to resize';
+        handle.style.cssText = 'position:absolute;bottom:2px;right:2px;width:22px;height:22px;display:flex;align-items:flex-end;justify-content:flex-end;cursor:nwse-resize;touch-action:none;z-index:2;padding:0 3px 3px 0;';
+        handle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v6h-6"/><path d="M21 11l-10 10"/></svg>`;
+        handle.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handle.setPointerCapture(e.pointerId);
+          const startX = e.clientX;
+          const startWidth = dom.getBoundingClientRect().width;
+          const parentWidth = dom.parentElement ? dom.parentElement.getBoundingClientRect().width : startWidth;
+          const onMove = (ev) => {
+            const pct = Math.min(100, Math.max(20, ((startWidth + ev.clientX - startX) / parentWidth) * 100));
+            dom.style.width = pct.toFixed(1) + '%';
+          };
+          const onUp = () => {
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+            handle.removeEventListener('pointercancel', onUp);
+            const width = dom.style.width;
+            if (typeof getPos === 'function' && width && width !== currentNode.attrs.width) {
+              const pos = getPos();
+              if (typeof pos === 'number') {
+                const tr = editor.view.state.tr.setNodeMarkup(pos, undefined, { ...currentNode.attrs, width });
+                editor.view.dispatch(tr);
+              }
             }
-          }
-        };
-        handle.addEventListener('pointermove', onMove);
-        handle.addEventListener('pointerup', onUp);
-        handle.addEventListener('pointercancel', onUp);
-      });
-      dom.appendChild(handle);
+          };
+          handle.addEventListener('pointermove', onMove);
+          handle.addEventListener('pointerup', onUp);
+          handle.addEventListener('pointercancel', onUp);
+        });
+        dom.appendChild(handle);
+      }
 
       return {
         dom,

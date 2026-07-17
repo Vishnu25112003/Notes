@@ -8,6 +8,8 @@ import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
 import ExportModal from '../components/common/ExportModal.jsx';
+import ShareModal from '../components/share/ShareModal.jsx';
+import { getShareSettings } from '../api/share.js';
 import { useAutosave } from '../hooks/useAutosave.js';
 
 const MenuIcon = () => (
@@ -20,6 +22,13 @@ const ExportIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <path d="M7 10l5 5 5-5M12 15V3"/>
+  </svg>
+);
+
+const ShareIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
   </svg>
 );
 
@@ -42,6 +51,13 @@ export default function PageEditor() {
   const [drawingId, setDrawingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  const refreshPending = () => {
+    getShareSettings('page', pageId).then(s => setPendingRequests(s.requests.length)).catch(() => {});
+  };
+  useEffect(() => { refreshPending(); }, [pageId]);
   const titleRef = useRef(title);
   const contentRef = useRef(content);
   titleRef.current = title;
@@ -96,8 +112,22 @@ export default function PageEditor() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <button
+            onClick={() => setSharing(true)}
+            title="Share this page"
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.07em', color: 'var(--text-mid)', background: 'var(--card-subtle)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mid)'; }}
+          >
+            <ShareIcon /> SHARE
+            {pendingRequests > 0 && (
+              <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, borderRadius: 9, background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                {pendingRequests}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setExporting(true)}
-            title="Export & share"
+            title="Export"
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.07em', color: 'var(--text-mid)', background: 'var(--card-subtle)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px', cursor: 'pointer' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mid)'; }}
@@ -152,6 +182,10 @@ export default function PageEditor() {
 
       {exporting && (
         <ExportModal title={title} content={content} onClose={() => setExporting(false)} />
+      )}
+
+      {sharing && (
+        <ShareModal type="page" id={pageId} onClose={() => { setSharing(false); refreshPending(); }} />
       )}
     </div>
   );

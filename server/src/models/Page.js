@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { shareSchema } from './shareSchema.js';
 
 const pageSchema = new mongoose.Schema(
   {
@@ -9,6 +10,7 @@ const pageSchema = new mongoose.Schema(
     content: { type: Object, default: {} },
     order: { type: Number, default: 0 },
     searchText: { type: String, default: '' },
+    share: { type: shareSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
@@ -16,5 +18,6 @@ const pageSchema = new mongoose.Schema(
 pageSchema.index({ title: 'text', searchText: 'text' });
 pageSchema.index({ userId: 1, sectionId: 1 });
 pageSchema.index({ parentId: 1 });
+pageSchema.index({ 'share.sharedWith.userId': 1 });
 
 export default mongoose.model('Page', pageSchema);

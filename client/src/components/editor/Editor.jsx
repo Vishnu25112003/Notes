@@ -11,7 +11,7 @@ import EditorToolbar from './EditorToolbar.jsx';
 import ConfirmDialog from '../common/ConfirmDialog.jsx';
 import { deleteDrawing } from '../../api/drawings.js';
 
-export default function Editor({ content, onChange, pageId, onOpenDrawing, placeholder = 'Start writing…' }) {
+export default function Editor({ content, onChange, pageId, onOpenDrawing, placeholder = 'Start writing…', editable = true, allowDrawings = true }) {
   const openDrawingRef = useRef(onOpenDrawing);
   openDrawingRef.current = onOpenDrawing;
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -24,10 +24,11 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
       TextStyle,
       Color,
       Placeholder.configure({ placeholder }),
-      ImageBlock,
-      DrawingBlock,
+      ImageBlock.configure({ interactive: editable }),
+      DrawingBlock.configure({ interactive: editable && allowDrawings }),
     ],
     content: content || '',
+    editable,
     onUpdate: ({ editor }) => {
       onChange && onChange(editor.getJSON());
     },
@@ -35,6 +36,11 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
       attributes: { class: 'tiptap min-h-[200px] px-1 py-2 focus:outline-none' },
     },
   });
+
+  // Access can be revoked mid-session — flip a live editor to read-only
+  useEffect(() => {
+    if (editor) editor.setEditable(editable);
+  }, [editor, editable]);
 
   useEffect(() => {
     if (!editor) return;
@@ -115,7 +121,7 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
       className="flex flex-col flex-1 rounded-xl overflow-hidden"
       style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
     >
-      <EditorToolbar editor={editor} pageId={pageId} onOpenDrawing={onOpenDrawing} />
+      {editable && <EditorToolbar editor={editor} pageId={pageId} onOpenDrawing={onOpenDrawing} allowDrawings={allowDrawings} />}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         <EditorContent editor={editor} />
       </div>

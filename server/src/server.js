@@ -11,6 +11,7 @@ import pagesRouter from './routes/pages.js';
 import drawingsRouter from './routes/drawings.js';
 import uploadRouter from './routes/upload.js';
 import searchRouter from './routes/search.js';
+import shareRouter from './routes/share.js';
 import authRouter from './routes/auth.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -44,6 +45,7 @@ app.use('/api/pages',    requireAuth, pagesRouter);
 app.use('/api/drawings', requireAuth, drawingsRouter);
 app.use('/api/upload',   requireAuth, uploadRouter);
 app.use('/api/search',   requireAuth, searchRouter);
+app.use('/api/share',    requireAuth, shareRouter);
 
 app.use(errorHandler);
 

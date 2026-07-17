@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { addDevice } from '../api/auth.js';
+import { getPendingRequestCount } from '../api/share.js';
 import Modal from '../components/common/Modal.jsx';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
 
@@ -24,6 +25,13 @@ const LayersIcon = () => (
   </svg>
 );
 
+const ShareIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
+  </svg>
+);
+
 const ArrowIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
@@ -37,6 +45,11 @@ export default function HomeScreen() {
   const [deviceName, setDeviceName] = useState('');
   const [deviceStatus, setDeviceStatus] = useState(null);
   const [deviceError, setDeviceError] = useState(null);
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  useEffect(() => {
+    getPendingRequestCount().then(r => setPendingRequests(r.count)).catch(() => {});
+  }, []);
 
   async function handleAddDevice(e) {
     e.preventDefault();
@@ -91,7 +104,7 @@ export default function HomeScreen() {
           Notespace
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
           <button
             onClick={() => navigate('/simple')}
             className="text-left group"
@@ -140,6 +153,36 @@ export default function HomeScreen() {
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--accent)', marginTop: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
               ENTER <ArrowIcon />
             </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/shared')}
+            className="text-left"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: 18,
+              background: 'var(--card-subtle)',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.background = 'rgba(124,108,255,.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
+          >
+            <div className="flex justify-between items-start">
+              <span style={{ color: 'var(--accent)' }}><ShareIcon /></span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)' }}>03</span>
+            </div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 18 }}>Shared</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 5, lineHeight: 1.45 }}>Notes others shared with you.</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--accent)', marginTop: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+              ENTER <ArrowIcon />
+            </div>
+            {pendingRequests > 0 && (
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: '0.08em', color: 'var(--accent)', marginTop: 10 }}>
+                ⬤ {pendingRequests} ACCESS REQUEST{pendingRequests > 1 ? 'S' : ''} PENDING
+              </div>
+            )}
           </button>
         </div>
       </div>
