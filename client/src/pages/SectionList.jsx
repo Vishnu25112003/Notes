@@ -144,9 +144,15 @@ export default function SectionList() {
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setDeleteTarget(s); }}
-                style={{ position: 'absolute', top: 10, right: 10, background: 'none', border: 'none', color: 'var(--text-label)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 4 }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--error)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-label)'}
+                style={{
+                  position: 'absolute', top: 10, right: 10,
+                  background: 'var(--border-faint)', border: '1px solid var(--border-faint)',
+                  color: 'var(--text-dim)', cursor: 'pointer',
+                  fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
+                }}
+                className="delete-btn"
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'var(--error-bg)'; e.currentTarget.style.borderColor = 'var(--error-border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.borderColor = 'var(--border-faint)'; }}
               >×</button>
             </div>
           );
@@ -174,6 +180,12 @@ export default function SectionList() {
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)' }}>NEW SECTION</span>
         </div>
       </div>
+
+      <style>{`
+        .delete-btn { opacity: 0; transition: opacity 0.15s; }
+        div:hover > .delete-btn { opacity: 1; }
+        @media (hover: none) { .delete-btn { opacity: 1; } }
+      `}</style>
 
       {creating && (
         <Modal title="New Section" onClose={() => setCreating(false)}>

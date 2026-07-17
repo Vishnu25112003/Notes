@@ -11,7 +11,7 @@ const GRID_BG = {
   backgroundSize: '32px 32px',
 };
 
-const DOT_COLORS = ['#7c6cff', '#5be3a0', '#f5a524', '#7c6cff', '#5be3a0'];
+const NOTE_COLORS = ['#7c6cff', '#5be3a0', '#f5a524', '#ec5d8a'];
 
 function relativeTime(date) {
   const diff = Date.now() - new Date(date).getTime();
@@ -41,6 +41,14 @@ const BackArrow = () => (
 const PlusIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 5v14M5 12h14"/>
+  </svg>
+);
+
+const DocIcon = ({ color }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <path d="M14 2v6h6"/>
+    <path d="M8 13h8M8 17h5"/>
   </svg>
 );
 
@@ -112,52 +120,55 @@ export default function SimpleList() {
 
       {/* Grid */}
       <div className="simplelist-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap: 14 }}>
-        {notes.map((note, i) => (
-          <div
-            key={note._id}
-            onClick={() => navigate(`/simple/${note._id}`)}
-            style={{
-              border: '1px solid var(--border)',
-              borderRadius: 9,
-              padding: 18,
-              background: 'var(--card-subtle)',
-              height: 180,
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'border-color 0.15s, background 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.4)'; e.currentTarget.style.background = 'rgba(124,108,255,.04)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: DOT_COLORS[i % DOT_COLORS.length], display: 'block' }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)' }}>{relativeTime(note.updatedAt)}</span>
-            </div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--text-2)', marginTop: 14 }}>
-              {note.title || 'Untitled'}
-            </div>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 7, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
-              {note.searchText?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.06em' }}>
-              {contentMeta(note.searchText)}
-            </div>
-            <button
-              onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}
+        {notes.map((note, i) => {
+          const color = NOTE_COLORS[i % NOTE_COLORS.length];
+          return (
+            <div
+              key={note._id}
+              onClick={() => navigate(`/simple/${note._id}`)}
               style={{
-                position: 'absolute', top: 8, right: 8,
-                background: 'var(--border-faint)', border: '1px solid var(--border-faint)',
-                color: 'var(--text-dim)', cursor: 'pointer',
-                fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
+                position: 'relative',
+                border: '1px solid var(--border)',
+                borderRadius: 9,
+                padding: 18,
+                background: 'var(--card-subtle)',
+                height: 180,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s, background 0.15s',
               }}
-              className="delete-btn"
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'var(--error-bg)'; e.currentTarget.style.borderColor = 'var(--error-border)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.borderColor = 'var(--border-faint)'; }}
-            >×</button>
-          </div>
-        ))}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}60`; e.currentTarget.style.background = `${color}08`; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color }} />
+              {/* Icon row reserves the top-right corner for the delete button — nothing overlaps */}
+              <div style={{ color, marginTop: 4 }}><DocIcon color={color} /></div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {note.title || 'Untitled'}
+              </div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
+                {note.searchText?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.08em' }}>
+                UPDATED {relativeTime(note.updatedAt)} · {contentMeta(note.searchText)}
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}
+                style={{
+                  position: 'absolute', top: 10, right: 10,
+                  background: 'var(--border-faint)', border: '1px solid var(--border-faint)',
+                  color: 'var(--text-dim)', cursor: 'pointer',
+                  fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
+                }}
+                className="delete-btn"
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'var(--error-bg)'; e.currentTarget.style.borderColor = 'var(--error-border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.borderColor = 'var(--border-faint)'; }}
+              >×</button>
+            </div>
+          );
+        })}
 
         {/* New note placeholder card */}
         <div

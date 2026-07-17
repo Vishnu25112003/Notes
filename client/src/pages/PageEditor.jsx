@@ -7,11 +7,19 @@ import Breadcrumbs from '../components/tree/Breadcrumbs.jsx';
 import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
+import ExportModal from '../components/common/ExportModal.jsx';
 import { useAutosave } from '../hooks/useAutosave.js';
 
 const MenuIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 6h18M3 12h18M3 18h18"/>
+  </svg>
+);
+
+const ExportIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <path d="M7 10l5 5 5-5M12 15V3"/>
   </svg>
 );
 
@@ -33,6 +41,7 @@ export default function PageEditor() {
   const [content, setContent] = useState(null);
   const [drawingId, setDrawingId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const titleRef = useRef(title);
   const contentRef = useRef(content);
   titleRef.current = title;
@@ -86,6 +95,15 @@ export default function PageEditor() {
           <Breadcrumbs section={section} pages={pages} currentPageId={pageId} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <button
+            onClick={() => setExporting(true)}
+            title="Export & share"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.07em', color: 'var(--text-mid)', background: 'var(--card-subtle)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mid)'; }}
+          >
+            <ExportIcon /> EXPORT
+          </button>
           <ThemeToggle />
           <SaveStatus status={saveStatus} />
         </div>
@@ -130,6 +148,10 @@ export default function PageEditor() {
           onClose={() => setDrawingId(null)}
           onSaved={() => {}}
         />
+      )}
+
+      {exporting && (
+        <ExportModal title={title} content={content} onClose={() => setExporting(false)} />
       )}
     </div>
   );

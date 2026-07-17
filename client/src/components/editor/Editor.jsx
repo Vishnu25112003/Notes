@@ -15,6 +15,7 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
   const openDrawingRef = useRef(onOpenDrawing);
   openDrawingRef.current = onOpenDrawing;
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingImageDelete, setPendingImageDelete] = useState(null);
 
   const editor = useEditor({
     extensions: [
@@ -43,12 +44,17 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
     const deleteHandler = (e) => {
       setPendingDelete(e.detail.drawingId);
     };
+    const deleteImageHandler = (e) => {
+      setPendingImageDelete({ getPos: e.detail.getPos });
+    };
     const el = editor.view.dom;
     el.addEventListener('open-drawing', openHandler);
     el.addEventListener('delete-drawing', deleteHandler);
+    el.addEventListener('delete-image', deleteImageHandler);
     return () => {
       el.removeEventListener('open-drawing', openHandler);
       el.removeEventListener('delete-drawing', deleteHandler);
+      el.removeEventListener('delete-image', deleteImageHandler);
     };
   }, [editor]);
 
@@ -92,6 +98,18 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
     }
   };
 
+  const handleConfirmImageDelete = () => {
+    const target = pendingImageDelete;
+    setPendingImageDelete(null);
+    if (!editor || !target || typeof target.getPos !== 'function') return;
+    const pos = target.getPos();
+    if (typeof pos !== 'number') return;
+    const { state, view } = editor;
+    const node = state.doc.nodeAt(pos);
+    if (!node || node.type.name !== 'imageBlock') return;
+    view.dispatch(state.tr.delete(pos, pos + node.nodeSize));
+  };
+
   return (
     <div
       className="flex flex-col flex-1 rounded-xl overflow-hidden"
@@ -108,6 +126,15 @@ export default function Editor({ content, onChange, pageId, onOpenDrawing, place
           danger
           onConfirm={handleConfirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {pendingImageDelete && (
+        <ConfirmDialog
+          title="Remove image?"
+          message="This will remove the image from this note."
+          danger
+          onConfirm={handleConfirmImageDelete}
+          onCancel={() => setPendingImageDelete(null)}
         />
       )}
     </div>
