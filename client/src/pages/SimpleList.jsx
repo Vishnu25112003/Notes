@@ -26,12 +26,6 @@ function relativeTime(date) {
   return `${Math.floor(days / 7)}W AGO`;
 }
 
-function contentMeta(searchText) {
-  if (!searchText) return 'EMPTY';
-  const words = searchText.trim().split(/\s+/).filter(Boolean).length;
-  return words > 0 ? `${words} WORDS` : 'EMPTY';
-}
-
 const BackArrow = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -130,11 +124,8 @@ export default function SimpleList() {
                 position: 'relative',
                 border: '1px solid var(--border)',
                 borderRadius: 9,
-                padding: 18,
+                padding: 20,
                 background: 'var(--card-subtle)',
-                height: 180,
-                display: 'flex',
-                flexDirection: 'column',
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s, background 0.15s',
@@ -144,15 +135,12 @@ export default function SimpleList() {
             >
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color }} />
               {/* Icon row reserves the top-right corner for the delete button — nothing overlaps */}
-              <div style={{ color, marginTop: 4 }}><DocIcon color={color} /></div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ color, marginTop: 6 }}><DocIcon color={color} /></div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {note.title || 'Untitled'}
               </div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.5, flex: 1, overflow: 'hidden' }}>
-                {note.searchText?.slice(0, 80) || <span style={{ fontStyle: 'italic' }}>No content</span>}
-              </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.08em' }}>
-                UPDATED {relativeTime(note.updatedAt)} · {contentMeta(note.searchText)}
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.08em', marginTop: 8 }}>
+                UPDATED {relativeTime(note.updatedAt)}
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setDeleteTarget(note); }}
@@ -176,7 +164,7 @@ export default function SimpleList() {
           style={{
             border: '1px dashed var(--border-dashed)',
             borderRadius: 9,
-            height: 180,
+            minHeight: 138,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
