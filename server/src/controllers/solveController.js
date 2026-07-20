@@ -1,6 +1,11 @@
-// 'gemini-flash-latest' resolved to gemini-2.0-flash, which Google shut down
-// on 2026-06-01 — use a pinned, supported model instead.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// Google keeps retiring models (2.0-flash in June 2026, 2.5-flash for new
+// users in July 2026), so try candidates in order and skip any that 404.
+const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-3.5-flash',
+  'gemini-flash-latest',
+  'gemini-3.1-flash-lite',
+].filter(Boolean);
 
 const PROMPT = `You are looking at an image exported from a handwritten/drawn notes canvas.
 Find any question, math expression, or problem in the image and solve it.
@@ -22,8 +27,6 @@ export async function solveDrawing(req, res, next) {
     if (!apiKey) {
       return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server' });
     }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
     const body = {
       contents: [
@@ -48,11 +51,17 @@ export async function solveDrawing(req, res, next) {
       },
     };
 
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    let resp;
+    for (const model of GEMINI_MODELS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (resp.status !== 404) break;
+      console.error(`Gemini model ${model} unavailable (404), trying next`);
+    }
 
     if (!resp.ok) {
       const detail = await resp.text();
