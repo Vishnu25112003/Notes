@@ -1,4 +1,6 @@
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// 'gemini-flash-latest' resolved to gemini-2.0-flash, which Google shut down
+// on 2026-06-01 — use a pinned, supported model instead.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 const PROMPT = `You are looking at an image exported from a handwritten/drawn notes canvas.
 Find any question, math expression, or problem in the image and solve it.
@@ -55,7 +57,16 @@ export async function solveDrawing(req, res, next) {
     if (!resp.ok) {
       const detail = await resp.text();
       console.error('Gemini API error:', resp.status, detail);
-      return res.status(502).json({ error: 'The solver service returned an error. Please try again.' });
+      let upstreamMessage = '';
+      try {
+        upstreamMessage = JSON.parse(detail)?.error?.message || '';
+      } catch { /* non-JSON error body */ }
+      if (resp.status === 429) {
+        return res.status(502).json({ error: 'The solver hit its usage limit. Please try again in a minute.' });
+      }
+      return res.status(502).json({
+        error: `The solver service returned an error (${resp.status}${upstreamMessage ? `: ${upstreamMessage}` : ''}). Please try again.`,
+      });
     }
 
     const data = await resp.json();
