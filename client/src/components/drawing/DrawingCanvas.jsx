@@ -24,9 +24,22 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
   const [solving, setSolving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [autoSolve, setAutoSolve] = useState(true);
+  const [toast, setToast] = useState(null);
   const solvingRef = useRef(false);
   const autoTimerRef = useRef(null);
   const lastAutoSigRef = useRef('');
+  const toastTimerRef = useRef(null);
+
+  const showToast = useCallback((message) => {
+    setToast(message);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 1800);
+  }, []);
+
+  const handleAutoToggle = useCallback((next) => {
+    setAutoSolve(next);
+    showToast(next ? 'Auto mode ON' : 'Auto mode OFF');
+  }, [showToast]);
 
   useEffect(() => {
     if (!drawingId) return;
@@ -154,8 +167,6 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
     }
   }, [excalidrawAPI]);
 
-  const handleSolve = useCallback(() => runSolve({ auto: false }), [runSolve]);
-
   // Auto-solve: after the pen has been idle for ~1.2s following a change,
   // run a silent solve (the backend only answers finished questions)
   const scheduleAutoSolve = useCallback(() => {
@@ -166,11 +177,26 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
 
   useEffect(() => {
     if (!autoSolve) clearTimeout(autoTimerRef.current);
-    return () => clearTimeout(autoTimerRef.current);
+    return () => {
+      clearTimeout(autoTimerRef.current);
+      clearTimeout(toastTimerRef.current);
+    };
   }, [autoSolve]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'absolute', top: 68, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
+          padding: '9px 18px', borderRadius: 8,
+          background: 'var(--accent)', color: 'var(--accent-fg)',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)', pointerEvents: 'none', whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
       {/* Header */}
       <div
         style={{
@@ -185,20 +211,19 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
           Drawing
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
+          {solving && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+              SOLVING…
+            </span>
+          )}
           <span
-            title="When on, questions are solved automatically as soon as you stop writing"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: autoSolve ? 'var(--accent)' : 'var(--text-mid)' }}
+            title="Auto solve: answers appear automatically when you stop writing"
+            style={{ position: 'relative', display: 'inline-block', width: 116, height: 36, overflow: 'visible' }}
           >
-            ✨ AUTO
-            <span style={{ display: 'inline-block', transform: 'scale(0.6)', margin: '-11px -25px' }}>
-              <Switch id="auto-solve" checked={autoSolve} onChange={setAutoSolve} label="Auto solve" />
+            <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) scale(0.6)' }}>
+              <Switch id="auto-solve" checked={autoSolve} onChange={handleAutoToggle} label="Auto solve" />
             </span>
           </span>
-          <button
-            onClick={handleSolve}
-            disabled={solving || saving}
-            style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: (solving || saving) ? 'not-allowed' : 'pointer', opacity: (solving || saving) ? 0.5 : 1, whiteSpace: 'nowrap' }}
-          >{solving ? 'SOLVING…' : '✨ SOLVE'}</button>
           <button
             onClick={handleSave}
             disabled={saving}
