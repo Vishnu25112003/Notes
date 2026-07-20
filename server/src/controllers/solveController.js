@@ -1,8 +1,7 @@
-// Primary provider: Groq (OpenAI-compatible API). The Gemini code below is
-// kept as an automatic fallback until Groq is proven stable, then it can go.
+// Solver provider: Groq (OpenAI-compatible API).
 
 // Groq vision-capable models — try in order, skip any that 404 (Groq retires
-// models the same way Google does; the Llama 4 vision models are already gone).
+// models regularly; the Llama 4 vision models are already gone).
 const GROQ_MODELS = [
   process.env.GROQ_MODEL,
   'qwen/qwen3.6-27b',
@@ -22,20 +21,11 @@ async function discoverGroqVisionModel(apiKey) {
   return model?.id || null;
 }
 
-// Google keeps retiring models (2.0-flash in June 2026, 2.5-flash for new
-// users in July 2026), so try candidates in order and skip any that 404.
-const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL,
-  'gemini-3.5-flash',
-  'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
-].filter(Boolean);
-
 const PROMPT = `You are looking at an image exported from a handwritten/drawn notes canvas.
 Find any question, math expression, or problem in the image and solve it.
 
 Rules:
-- If it is a math expression like "2 + 2 =" or "3 x 4", return only the final result in "answer" (e.g. "4", "12").
+- If it is a math expression — possibly ending in "=" or "=?" like "2 + 2 =", "5 x 3 =?" or just "3 x 4" — return only the final result in "answer" (e.g. "4", "15", "12"). The answer is drawn onto the canvas right after the "=" sign, so it must contain the result only, never restate the question.
 - For any other question (science, general knowledge, word problems), give a short, direct final answer in "answer".
 - Put a fuller explanation or working steps in "solution". Keep it concise.
 - If the image has no readable question, set answer to "" and explain briefly in "solution".
@@ -123,67 +113,6 @@ async function solveWithGroq(pngBase64) {
   return parseAnswer(text);
 }
 
-async function solveWithGemini(pngBase64) {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  const body = {
-    contents: [
-      {
-        parts: [
-          { text: PROMPT },
-          { inline_data: { mime_type: 'image/png', data: pngBase64 } },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: 'object',
-        properties: {
-          answer: { type: 'string' },
-          solution: { type: 'string' },
-        },
-        required: ['answer', 'solution'],
-      },
-    },
-  };
-
-  let resp;
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (resp.status !== 404) break;
-    console.error(`Gemini model ${model} unavailable (404), trying next`);
-  }
-
-  if (!resp.ok) {
-    const detail = await resp.text();
-    console.error('Gemini API error:', resp.status, detail);
-    let upstreamMessage = '';
-    try {
-      upstreamMessage = JSON.parse(detail)?.error?.message || '';
-    } catch { /* non-JSON error body */ }
-    if (resp.status === 429) {
-      throw new SolverError('The solver hit its usage limit. Please try again in a minute.');
-    }
-    throw new SolverError(
-      `The solver service returned an error (${resp.status}${upstreamMessage ? `: ${upstreamMessage}` : ''}). Please try again.`
-    );
-  }
-
-  const data = await resp.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new SolverError('The solver returned an empty response. Please try again.');
-  }
-  return parseAnswer(text);
-}
-
 export async function solveDrawing(req, res, next) {
   try {
     const { pngBase64 } = req.body;
@@ -191,33 +120,16 @@ export async function solveDrawing(req, res, next) {
       return res.status(400).json({ error: 'pngBase64 is required' });
     }
 
-    const hasGroq = Boolean(process.env.GROQ_API_KEY);
-    const hasGemini = Boolean(process.env.GEMINI_API_KEY);
-    if (!hasGroq && !hasGemini) {
-      return res.status(500).json({ error: 'No solver API key is configured on the server' });
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ error: 'GROQ_API_KEY is not configured on the server' });
     }
 
-    let lastError;
-    if (hasGroq) {
-      try {
-        return res.json(await solveWithGroq(pngBase64));
-      } catch (err) {
-        if (!(err instanceof SolverError)) throw err;
-        lastError = err;
-        console.error('Groq solver failed, falling back to Gemini:', err.userMessage);
-      }
+    try {
+      return res.json(await solveWithGroq(pngBase64));
+    } catch (err) {
+      if (!(err instanceof SolverError)) throw err;
+      return res.status(err.status).json({ error: err.userMessage });
     }
-
-    if (hasGemini) {
-      try {
-        return res.json(await solveWithGemini(pngBase64));
-      } catch (err) {
-        if (!(err instanceof SolverError)) throw err;
-        lastError = err;
-      }
-    }
-
-    return res.status(lastError.status).json({ error: lastError.userMessage });
   } catch (err) {
     next(err);
   }
