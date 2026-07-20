@@ -31,6 +31,14 @@ Rules:
 - If the image has no readable question, set answer to "" and explain briefly in "solution".
 - Respond with a JSON object of the form {"answer": string, "solution": string}.`;
 
+// Extra rules for auto-triggered solves, which fire while the user may still
+// be mid-writing — only complete questions should get an answer.
+const AUTO_PROMPT_SUFFIX = `
+
+IMPORTANT: This request was triggered automatically while the user may still be writing.
+- Only answer if the image contains a math expression that explicitly ends with "=" or "=?", or a clearly complete written question (e.g. ending with "?").
+- If the writing looks unfinished (e.g. "1 +", "12 x", or an expression with no trailing "=" or "?"), return {"answer": "", "solution": ""} and nothing else.`;
+
 class SolverError extends Error {
   constructor(userMessage, status = 502) {
     super(userMessage);
@@ -48,7 +56,7 @@ function parseAnswer(text) {
   }
 }
 
-async function solveWithGroq(pngBase64) {
+async function solveWithGroq(pngBase64, auto = false) {
   const apiKey = process.env.GROQ_API_KEY;
 
   const baseBody = {
@@ -58,7 +66,7 @@ async function solveWithGroq(pngBase64) {
       {
         role: 'user',
         content: [
-          { type: 'text', text: PROMPT },
+          { type: 'text', text: auto ? PROMPT + AUTO_PROMPT_SUFFIX : PROMPT },
           { type: 'image_url', image_url: { url: `data:image/png;base64,${pngBase64}` } },
         ],
       },
@@ -115,7 +123,7 @@ async function solveWithGroq(pngBase64) {
 
 export async function solveDrawing(req, res, next) {
   try {
-    const { pngBase64 } = req.body;
+    const { pngBase64, auto } = req.body;
     if (!pngBase64) {
       return res.status(400).json({ error: 'pngBase64 is required' });
     }
@@ -125,7 +133,7 @@ export async function solveDrawing(req, res, next) {
     }
 
     try {
-      return res.json(await solveWithGroq(pngBase64));
+      return res.json(await solveWithGroq(pngBase64, Boolean(auto)));
     } catch (err) {
       if (!(err instanceof SolverError)) throw err;
       return res.status(err.status).json({ error: err.userMessage });

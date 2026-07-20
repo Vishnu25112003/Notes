@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import { getDrawing, updateDrawing, exportDrawing } from '../../api/drawings.js';
 import { solveDrawing } from '../../api/solve.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import Switch from '../ui/toggle-switch.jsx';
 
 const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
@@ -22,6 +23,10 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [solving, setSolving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [autoSolve, setAutoSolve] = useState(true);
+  const solvingRef = useRef(false);
+  const autoTimerRef = useRef(null);
+  const lastAutoSigRef = useRef('');
 
   useEffect(() => {
     if (!drawingId) return;
@@ -66,21 +71,33 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
     }
   }, [excalidrawAPI, drawingId, onSaved]);
 
-  const handleSolve = useCallback(async () => {
-    if (!excalidrawAPI || solving) return;
+  const runSolve = useCallback(async ({ auto = false } = {}) => {
+    if (!excalidrawAPI || solvingRef.current) return;
     const elements = excalidrawAPI.getSceneElements();
-    if (!elements || elements.length === 0) {
-      alert('Draw or write a question first, then tap SOLVE.');
+
+    // Only send the user's strokes to the solver — previous AI answers would
+    // confuse the model and skew the answer placement
+    const userElements = (elements || []).filter(el => !el.isDeleted && !el.customData?.aiAnswer);
+    if (userElements.length === 0) {
+      if (!auto) alert('Draw or write a question first, then tap SOLVE.');
       return;
     }
+
+    // In auto mode, never re-solve content that hasn't changed since the last
+    // attempt (element versions bump on every edit)
+    const sig = userElements.map(el => `${el.id}:${el.version}`).join('|');
+    if (auto && sig === lastAutoSigRef.current) return;
+    lastAutoSigRef.current = sig;
+
+    solvingRef.current = true;
     setSolving(true);
     try {
       const appState = excalidrawAPI.getAppState();
       const files = excalidrawAPI.getFiles();
 
-      // Export the current canvas to a PNG (base64, no data: prefix)
+      // Export the question strokes to a PNG (base64, no data: prefix)
       const { exportToBlob, convertToExcalidrawElements } = await import('@excalidraw/excalidraw');
-      const blob = await exportToBlob({ elements, mimeType: 'image/png', appState, files });
+      const blob = await exportToBlob({ elements: userElements, mimeType: 'image/png', appState, files });
       const pngBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -88,39 +105,69 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
         reader.readAsDataURL(blob);
       });
 
-      const { answer, solution } = await solveDrawing({ pngBase64 });
-      const text = (answer && answer.trim()) || (solution && solution.trim());
+      const { answer, solution } = await solveDrawing({ pngBase64, auto });
+      // In auto mode an empty answer means "still being written" — stay silent
+      const text = (answer && answer.trim()) || (!auto && solution && solution.trim()) || '';
       if (!text) {
-        alert('Could not read a question from the drawing. Try writing it more clearly.');
+        if (!auto) alert('Could not read a question from the drawing. Try writing it more clearly.');
         return;
       }
 
-      // Place the answer at the center of the current viewport, in scene coordinates
-      const zoom = appState.zoom?.value || 1;
-      const vw = appState.width || window.innerWidth;
-      const vh = appState.height || window.innerHeight;
-      const sceneX = (vw / 2) / zoom - appState.scrollX;
-      const sceneY = (vh / 2) / zoom - appState.scrollY;
+      // Place the answer right after the question, on the same handwriting row
+      // as the most recent stroke (i.e., just after the "=" sign)
+      const last = userElements[userElements.length - 1];
+      const lastTop = last.y;
+      const lastBottom = last.y + last.height;
+      const row = userElements.filter(el => el.y < lastBottom && el.y + el.height > lastTop);
+      const rowTop = Math.min(...row.map(el => el.y));
+      const rowBottom = Math.max(...row.map(el => el.y + el.height));
+      const rowRight = Math.max(...row.map(el => el.x + el.width));
+      const rowHeight = rowBottom - rowTop;
+
+      // Match the answer size to the handwriting height (Excalidraw text line
+      // height is ~1.25 × fontSize), and vertically center it on the row
+      const fontSize = Math.min(Math.max(rowHeight * 0.8, 16), 120);
+      const x = rowRight + fontSize * 0.4;
+      const y = rowTop + (rowHeight - fontSize * 1.25) / 2;
 
       const newElements = convertToExcalidrawElements([
         {
           type: 'text',
-          x: sceneX,
-          y: sceneY,
+          x,
+          y,
           text,
-          fontSize: 36,
+          fontSize,
           strokeColor: '#e8590c',
         },
-      ]);
+      ]).map(el => ({ ...el, customData: { aiAnswer: true } }));
 
-      excalidrawAPI.updateScene({ elements: [...elements, ...newElements] });
+      // Re-fetch the scene so strokes drawn while the solver was running
+      // are not dropped
+      const current = excalidrawAPI.getSceneElements();
+      excalidrawAPI.updateScene({ elements: [...current, ...newElements] });
     } catch (e) {
       console.error('Solve error:', e);
-      alert('Could not solve the drawing. Please try again.');
+      if (!auto) alert('Could not solve the drawing. Please try again.');
     } finally {
+      solvingRef.current = false;
       setSolving(false);
     }
-  }, [excalidrawAPI, solving]);
+  }, [excalidrawAPI]);
+
+  const handleSolve = useCallback(() => runSolve({ auto: false }), [runSolve]);
+
+  // Auto-solve: after the pen has been idle for ~1.2s following a change,
+  // run a silent solve (the backend only answers finished questions)
+  const scheduleAutoSolve = useCallback(() => {
+    if (!autoSolve) return;
+    clearTimeout(autoTimerRef.current);
+    autoTimerRef.current = setTimeout(() => runSolve({ auto: true }), 1200);
+  }, [autoSolve, runSolve]);
+
+  useEffect(() => {
+    if (!autoSolve) clearTimeout(autoTimerRef.current);
+    return () => clearTimeout(autoTimerRef.current);
+  }, [autoSolve]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -138,6 +185,15 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
           Drawing
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
+          <span
+            title="When on, questions are solved automatically as soon as you stop writing"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: autoSolve ? 'var(--accent)' : 'var(--text-mid)' }}
+          >
+            ✨ AUTO
+            <span style={{ display: 'inline-block', transform: 'scale(0.6)', margin: '-11px -25px' }}>
+              <Switch id="auto-solve" checked={autoSolve} onChange={setAutoSolve} label="Auto solve" />
+            </span>
+          </span>
           <button
             onClick={handleSolve}
             disabled={solving || saving}
@@ -176,6 +232,7 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
               excalidrawAPI={(api) => setExcalidrawAPI(api)}
               initialData={initialData}
               theme={theme}
+              onChange={scheduleAutoSolve}
             />
           </Suspense>
         )}
