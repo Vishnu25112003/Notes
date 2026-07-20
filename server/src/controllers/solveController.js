@@ -2,12 +2,25 @@
 // kept as an automatic fallback until Groq is proven stable, then it can go.
 
 // Groq vision-capable models — try in order, skip any that 404 (Groq retires
-// preview models the same way Google does).
+// models the same way Google does; the Llama 4 vision models are already gone).
 const GROQ_MODELS = [
   process.env.GROQ_MODEL,
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'qwen/qwen3.6-27b',
 ].filter(Boolean);
+
+// If every hardcoded model has been retired, ask Groq which active models can
+// take image input and use the first one, so retirements no longer break us.
+async function discoverGroqVisionModel(apiKey) {
+  const resp = await fetch('https://api.groq.com/openai/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!resp.ok) return null;
+  const { data } = await resp.json();
+  const model = (data || []).find(
+    (m) => m.active && (m.input_modalities || []).includes('image')
+  );
+  return model?.id || null;
+}
 
 // Google keeps retiring models (2.0-flash in June 2026, 2.5-flash for new
 // users in July 2026), so try candidates in order and skip any that 404.
@@ -62,9 +75,8 @@ async function solveWithGroq(pngBase64) {
     ],
   };
 
-  let resp;
-  for (const model of GROQ_MODELS) {
-    resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const callModel = (model) =>
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,8 +84,20 @@ async function solveWithGroq(pngBase64) {
       },
       body: JSON.stringify({ ...baseBody, model }),
     });
+
+  let resp;
+  for (const model of GROQ_MODELS) {
+    resp = await callModel(model);
     if (resp.status !== 404) break;
     console.error(`Groq model ${model} unavailable (404), trying next`);
+  }
+
+  if (resp.status === 404) {
+    const discovered = await discoverGroqVisionModel(apiKey);
+    if (discovered) {
+      console.error(`All configured Groq models retired; discovered ${discovered}`);
+      resp = await callModel(discovered);
+    }
   }
 
   if (!resp.ok) {
