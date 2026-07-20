@@ -3,7 +3,7 @@ import '@excalidraw/excalidraw/index.css';
 import { getDrawing, updateDrawing, exportDrawing } from '../../api/drawings.js';
 import { solveDrawing } from '../../api/solve.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import Switch from '../ui/toggle-switch.jsx';
+import PowerButton from '../ui/power-button.jsx';
 
 const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
@@ -177,11 +177,13 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
 
   useEffect(() => {
     if (!autoSolve) clearTimeout(autoTimerRef.current);
-    return () => {
-      clearTimeout(autoTimerRef.current);
-      clearTimeout(toastTimerRef.current);
-    };
+    return () => clearTimeout(autoTimerRef.current);
   }, [autoSolve]);
+
+  // Clear the toast hide-timer only on unmount — clearing it whenever
+  // autoSolve changes would cancel the timer right after each toggle,
+  // leaving the toast stuck on screen
+  useEffect(() => () => clearTimeout(toastTimerRef.current), []);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -216,14 +218,12 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
               SOLVING…
             </span>
           )}
-          <span
+          <PowerButton
+            on={autoSolve}
+            onClick={() => handleAutoToggle(!autoSolve)}
             title="Auto solve: answers appear automatically when you stop writing"
-            style={{ position: 'relative', display: 'inline-block', width: 116, height: 36, overflow: 'visible' }}
-          >
-            <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) scale(0.6)' }}>
-              <Switch id="auto-solve" checked={autoSolve} onChange={handleAutoToggle} label="Auto solve" />
-            </span>
-          </span>
+            size={36}
+          />
           <button
             onClick={handleSave}
             disabled={saving}
