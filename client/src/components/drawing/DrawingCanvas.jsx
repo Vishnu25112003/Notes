@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import { getDrawing, updateDrawing, exportDrawing } from '../../api/drawings.js';
+import { solveDrawing } from '../../api/solve.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 
 const ExcalidrawLazy = lazy(() =>
@@ -19,6 +20,7 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
   const [initialData, setInitialData] = useState(null);
   const [excalidrawAPI, setExcalidrawAPI] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [solving, setSolving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +66,62 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
     }
   }, [excalidrawAPI, drawingId, onSaved]);
 
+  const handleSolve = useCallback(async () => {
+    if (!excalidrawAPI || solving) return;
+    const elements = excalidrawAPI.getSceneElements();
+    if (!elements || elements.length === 0) {
+      alert('Draw or write a question first, then tap SOLVE.');
+      return;
+    }
+    setSolving(true);
+    try {
+      const appState = excalidrawAPI.getAppState();
+      const files = excalidrawAPI.getFiles();
+
+      // Export the current canvas to a PNG (base64, no data: prefix)
+      const { exportToBlob, convertToExcalidrawElements } = await import('@excalidraw/excalidraw');
+      const blob = await exportToBlob({ elements, mimeType: 'image/png', appState, files });
+      const pngBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+
+      const { answer, solution } = await solveDrawing({ pngBase64 });
+      const text = (answer && answer.trim()) || (solution && solution.trim());
+      if (!text) {
+        alert('Could not read a question from the drawing. Try writing it more clearly.');
+        return;
+      }
+
+      // Place the answer at the center of the current viewport, in scene coordinates
+      const zoom = appState.zoom?.value || 1;
+      const vw = appState.width || window.innerWidth;
+      const vh = appState.height || window.innerHeight;
+      const sceneX = (vw / 2) / zoom - appState.scrollX;
+      const sceneY = (vh / 2) / zoom - appState.scrollY;
+
+      const newElements = convertToExcalidrawElements([
+        {
+          type: 'text',
+          x: sceneX,
+          y: sceneY,
+          text,
+          fontSize: 36,
+          strokeColor: '#e8590c',
+        },
+      ]);
+
+      excalidrawAPI.updateScene({ elements: [...elements, ...newElements] });
+    } catch (e) {
+      console.error('Solve error:', e);
+      alert('Could not solve the drawing. Please try again.');
+    } finally {
+      setSolving(false);
+    }
+  }, [excalidrawAPI, solving]);
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       {/* Header */}
@@ -80,6 +138,11 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
           Drawing
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', fontWeight: 600 }}>
+          <button
+            onClick={handleSolve}
+            disabled={solving || saving}
+            style={{ padding: '8px 12px', borderRadius: 7, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: (solving || saving) ? 'not-allowed' : 'pointer', opacity: (solving || saving) ? 0.5 : 1, whiteSpace: 'nowrap' }}
+          >{solving ? 'SOLVING…' : '✨ SOLVE'}</button>
           <button
             onClick={handleSave}
             disabled={saving}
