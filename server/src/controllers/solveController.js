@@ -36,8 +36,10 @@ Rules:
 const AUTO_PROMPT_SUFFIX = `
 
 IMPORTANT: This request was triggered automatically while the user may still be writing.
-- Only answer if the image contains a math expression that explicitly ends with "=" or "=?", or a clearly complete written question (e.g. ending with "?").
-- If the writing looks unfinished (e.g. "1 +", "12 x", or an expression with no trailing "=" or "?"), return {"answer": "", "solution": ""} and nothing else.`;
+Answer when EITHER of these is true:
+- A math expression ends with "=" or "=?" (e.g. "1+1=", "5 x 3 =?").
+- The writing is a question ending with "?" (e.g. "What is the capital of France?", "Who invented the telephone?"). Treat ANY readable question that ends with "?" as complete and ALWAYS answer it — text questions are just as valid as math.
+Return {"answer": "", "solution": ""} ONLY when the writing is clearly an unfinished fragment with no trailing "=", "=?" or "?" (e.g. "1 +", "12 x", "What is the").`;
 
 class SolverError extends Error {
   constructor(userMessage, status = 502) {

@@ -36,11 +36,11 @@ const StyledButton = styled.button`
   border-radius: ${(p) => Math.round(p.$size * 0.32)}px;
   background: ${(p) =>
     p.$on
-      ? 'linear-gradient(145deg, #43d16b, #1d9e40)'
+      ? 'linear-gradient(145deg, color-mix(in srgb, var(--accent) 80%, white), color-mix(in srgb, var(--accent) 80%, black))'
       : 'linear-gradient(145deg, var(--border), var(--border-faint))'};
   box-shadow: ${(p) =>
     p.$on
-      ? '0 2px 8px rgba(47, 191, 79, 0.55), 0 0 14px rgba(47, 191, 79, 0.35)'
+      ? '0 2px 8px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent)'
       : '0 2px 6px rgba(0, 0, 0, 0.35)'};
   transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 
@@ -53,7 +53,7 @@ const StyledButton = styled.button`
     border-radius: ${(p) => Math.round(p.$size * 0.26)}px;
     background: var(--bg);
     box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.25);
-    color: ${(p) => (p.$on ? '#2fbf4f' : 'var(--text-mid)')};
+    color: ${(p) => (p.$on ? 'var(--accent)' : 'var(--text-mid)')};
     transition: color 0.2s;
   }
 

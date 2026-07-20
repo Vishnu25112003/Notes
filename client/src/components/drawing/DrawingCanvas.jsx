@@ -9,6 +9,32 @@ const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
 );
 
+// How long the pen must stay idle before an auto-solve fires. Long enough
+// to survive the pauses between words when writing a text question, short
+// enough that math answers still feel instant.
+const AUTO_SOLVE_IDLE_MS = 2500;
+
+// Answers longer than this go below the question as a wrapped paragraph
+// instead of inline after the "=" (Excalidraw text never wraps on its own)
+const INLINE_ANSWER_MAX_CHARS = 30;
+
+const wrapText = (str, maxCharsPerLine) => {
+  const lines = [];
+  for (const paragraph of str.split('\n')) {
+    let line = '';
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      if (line && (line.length + 1 + word.length) > maxCharsPerLine) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = line ? `${line} ${word}` : word;
+      }
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
+};
+
 const PencilIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9"/>
@@ -137,18 +163,35 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
       const rowRight = Math.max(...row.map(el => el.x + el.width));
       const rowHeight = rowBottom - rowTop;
 
-      // Match the answer size to the handwriting height (Excalidraw text line
-      // height is ~1.25 × fontSize), and vertically center it on the row
-      const fontSize = Math.min(Math.max(rowHeight * 0.8, 16), 120);
-      const x = rowRight + fontSize * 0.4;
-      const y = rowTop + (rowHeight - fontSize * 1.25) / 2;
+      let x, y, fontSize, displayText;
+      if (text.length <= INLINE_ANSWER_MAX_CHARS && !text.includes('\n')) {
+        // Short answer: inline right after the "=", matching the handwriting
+        // height (Excalidraw text line height is ~1.25 × fontSize) and
+        // vertically centered on the row
+        fontSize = Math.min(Math.max(rowHeight * 0.8, 16), 120);
+        x = rowRight + fontSize * 0.4;
+        y = rowTop + (rowHeight - fontSize * 1.25) / 2;
+        displayText = text;
+      } else {
+        // Long answer: wrapped paragraph below the question, kept within the
+        // visible viewport width so it never runs off the screen
+        const rowLeft = Math.min(...row.map(el => el.x));
+        fontSize = Math.min(Math.max(rowHeight * 0.35, 16), 28);
+        const zoom = appState.zoom?.value || 1;
+        const viewportRight = (appState.width || window.innerWidth) / zoom - appState.scrollX;
+        const availableWidth = Math.max(260, viewportRight - rowLeft - 40);
+        const maxChars = Math.max(24, Math.floor(availableWidth / (fontSize * 0.6)));
+        displayText = wrapText(text, maxChars);
+        x = rowLeft;
+        y = rowBottom + fontSize;
+      }
 
       const newElements = convertToExcalidrawElements([
         {
           type: 'text',
           x,
           y,
-          text,
+          text: displayText,
           fontSize,
           strokeColor: '#e8590c',
         },
@@ -167,12 +210,12 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
     }
   }, [excalidrawAPI]);
 
-  // Auto-solve: after the pen has been idle for ~1.2s following a change,
-  // run a silent solve (the backend only answers finished questions)
+  // Auto-solve: once the pen goes idle after a change, run a silent solve
+  // (the backend only answers finished questions)
   const scheduleAutoSolve = useCallback(() => {
     if (!autoSolve) return;
     clearTimeout(autoTimerRef.current);
-    autoTimerRef.current = setTimeout(() => runSolve({ auto: true }), 1200);
+    autoTimerRef.current = setTimeout(() => runSolve({ auto: true }), AUTO_SOLVE_IDLE_MS);
   }, [autoSolve, runSolve]);
 
   useEffect(() => {
