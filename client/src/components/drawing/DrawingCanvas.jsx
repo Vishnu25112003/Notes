@@ -151,38 +151,39 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
         return;
       }
 
-      // Place the answer right after the question, on the same handwriting row
-      // as the most recent stroke (i.e., just after the "=" sign)
-      const last = userElements[userElements.length - 1];
-      const lastTop = last.y;
-      const lastBottom = last.y + last.height;
-      const row = userElements.filter(el => el.y < lastBottom && el.y + el.height > lastTop);
-      const rowTop = Math.min(...row.map(el => el.y));
-      const rowBottom = Math.max(...row.map(el => el.y + el.height));
-      const rowRight = Math.max(...row.map(el => el.x + el.width));
-      const rowHeight = rowBottom - rowTop;
+      // Place the answer to the right of the WHOLE question, vertically
+      // centered on its full height. Using the entire bounding box — not just
+      // the last stroke's row — keeps the answer beside the "=" even for
+      // stacked expressions like fractions, where the last stroke drawn (e.g.
+      // the denominator) sits on a lower row than the "=".
+      const boxLeft = Math.min(...userElements.map(el => el.x));
+      const boxTop = Math.min(...userElements.map(el => el.y));
+      const boxRight = Math.max(...userElements.map(el => el.x + el.width));
+      const boxBottom = Math.max(...userElements.map(el => el.y + el.height));
+      const boxHeight = boxBottom - boxTop;
+      // Approximate handwriting size from the tallest single stroke so the
+      // answer matches a character's height, not the taller stacked box.
+      const charHeight = Math.max(...userElements.map(el => el.height));
 
       let x, y, fontSize, displayText;
       if (text.length <= INLINE_ANSWER_MAX_CHARS && !text.includes('\n')) {
-        // Short answer: inline right after the "=", matching the handwriting
-        // height (Excalidraw text line height is ~1.25 × fontSize) and
-        // vertically centered on the row
-        fontSize = Math.min(Math.max(rowHeight * 0.8, 16), 120);
-        x = rowRight + fontSize * 0.4;
-        y = rowTop + (rowHeight - fontSize * 1.25) / 2;
+        // Short answer: inline to the right of the expression (Excalidraw text
+        // line height is ~1.25 × fontSize), vertically centered on the box
+        fontSize = Math.min(Math.max(charHeight * 0.8, 16), 120);
+        x = boxRight + fontSize * 0.4;
+        y = boxTop + (boxHeight - fontSize * 1.25) / 2;
         displayText = text;
       } else {
         // Long answer: wrapped paragraph below the question, kept within the
         // visible viewport width so it never runs off the screen
-        const rowLeft = Math.min(...row.map(el => el.x));
-        fontSize = Math.min(Math.max(rowHeight * 0.35, 16), 28);
+        fontSize = Math.min(Math.max(charHeight * 0.35, 16), 28);
         const zoom = appState.zoom?.value || 1;
         const viewportRight = (appState.width || window.innerWidth) / zoom - appState.scrollX;
-        const availableWidth = Math.max(260, viewportRight - rowLeft - 40);
+        const availableWidth = Math.max(260, viewportRight - boxLeft - 40);
         const maxChars = Math.max(24, Math.floor(availableWidth / (fontSize * 0.6)));
         displayText = wrapText(text, maxChars);
-        x = rowLeft;
-        y = rowBottom + fontSize;
+        x = boxLeft;
+        y = boxBottom + fontSize;
       }
 
       const newElements = convertToExcalidrawElements([
