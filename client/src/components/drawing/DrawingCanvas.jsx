@@ -9,10 +9,9 @@ const ExcalidrawLazy = lazy(() =>
   import('@excalidraw/excalidraw').then(m => ({ default: m.Excalidraw }))
 );
 
-// How long the pen must stay idle before an auto-solve fires. Long enough
-// to survive the pauses between words when writing a text question, short
-// enough that math answers still feel instant.
-const AUTO_SOLVE_IDLE_MS = 2500;
+// How long the pen must stay idle before an auto-solve fires. Kept snappy so
+// answers appear almost as soon as you stop writing.
+const AUTO_SOLVE_IDLE_MS = 1500;
 
 // Answers longer than this go below the question as a wrapped paragraph
 // instead of inline after the "=" (Excalidraw text never wraps on its own)
@@ -198,9 +197,13 @@ export default function DrawingCanvas({ drawingId, onClose, onSaved }) {
       ]).map(el => ({ ...el, customData: { aiAnswer: true } }));
 
       // Re-fetch the scene so strokes drawn while the solver was running
-      // are not dropped
+      // are not dropped, and drop any previous AI answer(s) so editing a
+      // question replaces its old answer instead of stacking a new one below
       const current = excalidrawAPI.getSceneElements();
-      excalidrawAPI.updateScene({ elements: [...current, ...newElements] });
+      const cleaned = current.map(el =>
+        el.customData?.aiAnswer && !el.isDeleted ? { ...el, isDeleted: true } : el
+      );
+      excalidrawAPI.updateScene({ elements: [...cleaned, ...newElements] });
     } catch (e) {
       console.error('Solve error:', e);
       if (!auto) alert('Could not solve the drawing. Please try again.');
