@@ -274,6 +274,52 @@ export async function updateSharedContent(req, res) {
   res.json({ ok: true, updatedAt: doc.updatedAt });
 }
 
+export async function createSectionPage(req, res) {
+  const { type, id } = req.params;
+  if (type !== 'section') return res.status(400).json({ error: 'Pages can only be created inside a section' });
+  if (!mongoose.isValidObjectId(id)) return res.status(404).json({ error: 'Not found' });
+  const section = await Section.findById(id);
+  if (!section) return res.status(404).json({ error: 'Not found' });
+
+  const owner = isOwner(section, req.user.id);
+  if (!owner) {
+    const share = normalizeShare(section);
+    if (!hasAccess(share, req.user.id) || share.permission !== 'edit') {
+      return res.status(403).json({ error: 'No edit access' });
+    }
+  }
+
+  const { title, parentId } = req.body;
+  // A provided parent must be a page of this same section
+  if (parentId) {
+    if (!mongoose.isValidObjectId(parentId)) return res.status(400).json({ error: 'Invalid parent page' });
+    const parent = await Page.findOne({ _id: parentId, sectionId: section._id }).select('_id');
+    if (!parent) return res.status(400).json({ error: 'Invalid parent page' });
+  }
+
+  // Pages of a shared section belong to the section owner so the tree stays unified
+  // and access keeps cascading from the section's share.
+  const siblingsCount = await Page.countDocuments({
+    sectionId: section._id,
+    parentId: parentId || null,
+    userId: section.userId,
+  });
+  const page = await Page.create({
+    userId: section.userId,
+    sectionId: section._id,
+    parentId: parentId || null,
+    title: title || 'Untitled Page',
+    order: siblingsCount,
+  });
+  res.status(201).json({
+    id: page._id,
+    title: page.title,
+    parentId: page.parentId,
+    order: page.order,
+    updatedAt: page.updatedAt,
+  });
+}
+
 export async function requestAccess(req, res) {
   const { type, id } = req.params;
   if (!getModel(type)) return res.status(400).json({ error: 'Invalid type' });

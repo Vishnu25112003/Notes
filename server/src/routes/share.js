@@ -12,6 +12,7 @@ import {
   updateSharedContent,
   requestAccess,
   cloneShared,
+  createSectionPage,
 } from '../controllers/shareController.js';
 
 const router = Router();
@@ -27,6 +28,7 @@ router.delete('/:type/:id/users/:userId', removeShareUser);
 router.post('/:type/:id/requests/:userId/approve', approveRequest);
 router.delete('/:type/:id/requests/:userId', denyRequest);
 router.put('/:type/:id/content', updateSharedContent);
+router.post('/:type/:id/pages', createSectionPage);
 router.post('/:type/:id/request', requestAccess);
 router.post('/:type/:id/clone', cloneShared);
 router.get('/:type/:id', resolveShared);

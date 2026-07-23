@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { resolveShared, saveShared, requestAccess, cloneShared } from '../api/share.js';
+import { resolveShared, saveShared, requestAccess, cloneShared, createSharedSectionPage } from '../api/share.js';
 import Editor from '../components/editor/Editor.jsx';
 import Loader from '../components/common/Loader.jsx';
 import SaveStatus from '../components/common/SaveStatus.jsx';
@@ -20,6 +20,12 @@ const CloneIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="9" width="13" height="13" rx="2"/>
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5v14M5 12h14"/>
   </svg>
 );
 
@@ -50,6 +56,7 @@ export default function SharedViewer() {
   const [content, setContent] = useState(null);
   const [requestState, setRequestState] = useState(null); // null | 'sending' | 'pending'
   const [cloning, setCloning] = useState(false);
+  const [creatingPage, setCreatingPage] = useState(false);
   const [revoked, setRevoked] = useState(false);
   const titleRef = useRef(title);
   const contentRef = useRef(content);
@@ -146,6 +153,17 @@ export default function SharedViewer() {
       navigate(type === 'section' ? `/sections/${res.id}` : `/simple/${res.id}`);
     } catch {
       setCloning(false);
+    }
+  };
+
+  const handleNewPage = async () => {
+    if (creatingPage) return;
+    setCreatingPage(true);
+    try {
+      const res = await createSharedSectionPage(id, { title: 'Untitled Page' });
+      navigate(`/shared/page/${res.id}`);
+    } catch {
+      setCreatingPage(false);
     }
   };
 
@@ -246,6 +264,24 @@ export default function SharedViewer() {
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            {editable && (
+              <button
+                onClick={handleNewPage}
+                disabled={creatingPage}
+                title="Create a new page in this section"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.07em', fontWeight: 600,
+                  color: 'var(--text-mid)', background: 'var(--card-subtle)',
+                  border: '1px solid var(--border)', borderRadius: 7, padding: '7px 12px',
+                  cursor: creatingPage ? 'wait' : 'pointer',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mid)'; }}
+              >
+                <PlusIcon /> {creatingPage ? 'CREATING…' : 'NEW PAGE'}
+              </button>
+            )}
             <button
               onClick={state.allowClone ? handleClone : undefined}
               disabled={!state.allowClone || cloning}
@@ -278,8 +314,19 @@ export default function SharedViewer() {
           </div>
 
           {ordered.length === 0 ? (
-            <div style={{ fontFamily: SANS, fontSize: 14, color: 'var(--text-label)', fontStyle: 'italic' }}>
-              This section has no pages yet.
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 14 }}>
+              <div style={{ fontFamily: SANS, fontSize: 14, color: 'var(--text-label)', fontStyle: 'italic' }}>
+                This section has no pages yet.
+              </div>
+              {editable && (
+                <button
+                  onClick={handleNewPage}
+                  disabled={creatingPage}
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: MONO, fontSize: 11, letterSpacing: '0.06em', color: 'var(--accent-fg)', background: 'var(--accent)', border: 'none', borderRadius: 7, padding: '9px 16px', fontWeight: 600, cursor: creatingPage ? 'wait' : 'pointer' }}
+                >
+                  <PlusIcon /> {creatingPage ? 'CREATING…' : 'NEW PAGE'}
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

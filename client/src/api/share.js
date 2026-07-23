@@ -6,6 +6,7 @@ export const resolveShared = (type, id) => api.get(`/share/${type}/${id}`);
 export const saveShared = (type, id, data) => api.put(`/share/${type}/${id}/content`, data);
 export const requestAccess = (type, id) => api.post(`/share/${type}/${id}/request`);
 export const cloneShared = (type, id) => api.post(`/share/${type}/${id}/clone`);
+export const createSharedSectionPage = (id, data) => api.post(`/share/section/${id}/pages`, data);
 
 // Owner
 export const getPendingRequestCount = () => api.get('/share/requests/count');
