@@ -60,9 +60,12 @@ export default function SharedViewer() {
     resolveShared(type, id)
       .then(res => {
         if (res.status === 'owner') {
-          const target = type === 'note'
-            ? `/simple/${res.native.id}`
-            : `/sections/${res.native.sectionId}/pages/${res.native.id}`;
+          const { native } = res;
+          const target = native.type === 'note'
+            ? `/simple/${native.id}`
+            : native.type === 'section'
+              ? `/sections/${native.id}`
+              : `/sections/${native.sectionId}/pages/${native.id}`;
           navigate(target, { replace: true });
           return;
         }
@@ -71,15 +74,27 @@ export default function SharedViewer() {
           setRequestState(res.requestPending ? 'pending' : null);
           return;
         }
+        if (res.kind === 'section') {
+          setState({
+            status: 'ok',
+            kind: 'section',
+            owner: res.owner,
+            permission: res.permission,
+            allowClone: res.allowClone,
+            section: res.section,
+            pages: res.pages,
+          });
+          return;
+        }
         setTitle(res.note.title);
         setContent(res.note.content);
-        setState({ status: 'ok', owner: res.owner, permission: res.permission, allowClone: res.allowClone });
+        setState({ status: 'ok', kind: 'doc', owner: res.owner, permission: res.permission, allowClone: res.allowClone });
       })
       .catch(() => setState({ status: 'gone' }));
   };
 
   useEffect(() => {
-    if (type !== 'note' && type !== 'page') {
+    if (type !== 'note' && type !== 'page' && type !== 'section') {
       navigate('/shared', { replace: true });
       return;
     }
@@ -128,7 +143,7 @@ export default function SharedViewer() {
     setCloning(true);
     try {
       const res = await cloneShared(type, id);
-      navigate(`/simple/${res.id}`);
+      navigate(type === 'section' ? `/sections/${res.id}` : `/simple/${res.id}`);
     } catch {
       setCloning(false);
     }
@@ -186,6 +201,119 @@ export default function SharedViewer() {
             >{requestState === 'sending' ? 'SENDING…' : 'REQUEST ACCESS'}</button>
           )}
         </CenterCard>
+      </div>
+    );
+  }
+
+  // ---- Section view: browse the shared section's pages ----
+  if (state.kind === 'section') {
+    // Flatten the page tree into a depth-ordered list for display
+    const byParent = new Map();
+    for (const p of state.pages) {
+      const key = p.parentId ? String(p.parentId) : 'root';
+      if (!byParent.has(key)) byParent.set(key, []);
+      byParent.get(key).push(p);
+    }
+    for (const list of byParent.values()) list.sort((a, b) => a.order - b.order);
+    const ordered = [];
+    const walk = (key, depth) => {
+      for (const p of byParent.get(key) || []) {
+        ordered.push({ ...p, depth });
+        walk(String(p.id), depth + 1);
+      }
+    };
+    walk('root', 0);
+
+    return (
+      <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+        <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)' }} />
+
+        {/* Top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', borderBottom: '1px solid var(--border-faint)', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <button
+              onClick={() => navigate('/shared')}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: MONO, fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <BackArrow /> SHARED
+            </button>
+            <span style={{ width: 1, height: 18, background: 'var(--divider)', flexShrink: 0 }} />
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.08em', color: 'var(--text-label)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              SHARED BY @{state.owner?.toUpperCase()}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.08em', color: editable ? '#5be3a0' : 'var(--accent)', border: `1px solid ${editable ? 'rgba(91,227,160,.4)' : 'rgba(124,108,255,.4)'}`, borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>
+              {editable ? 'CAN EDIT' : 'VIEW ONLY'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <button
+              onClick={state.allowClone ? handleClone : undefined}
+              disabled={!state.allowClone || cloning}
+              title={state.allowClone ? 'Copy this section into your account' : 'Owner disabled cloning'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.07em', fontWeight: 600,
+                color: 'var(--accent-fg)', background: 'var(--accent)',
+                border: 'none', borderRadius: 7, padding: '7px 12px',
+                cursor: state.allowClone ? (cloning ? 'wait' : 'pointer') : 'not-allowed',
+                opacity: state.allowClone ? 1 : 0.45,
+              }}
+            >
+              <CloneIcon /> {cloning ? 'CLONING…' : 'CLONE'}
+            </button>
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* Section header + page list */}
+        <div style={{ flex: 1, overflowY: 'auto', maxWidth: 780, width: '100%', margin: '0 auto', padding: '34px 24px 40px' }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-label)', marginBottom: 10 }}>
+            SHARED · SECTION
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 6 }}>
+            {state.section.title}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 22 }}>
+            {ordered.length} PAGE{ordered.length === 1 ? '' : 'S'}
+          </div>
+
+          {ordered.length === 0 ? (
+            <div style={{ fontFamily: SANS, fontSize: 14, color: 'var(--text-label)', fontStyle: 'italic' }}>
+              This section has no pages yet.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {ordered.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate(`/shared/page/${p.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    textAlign: 'left', width: '100%',
+                    marginLeft: p.depth * 18, maxWidth: `calc(100% - ${p.depth * 18}px)`,
+                    border: '1px solid var(--border)', borderRadius: 8,
+                    padding: '11px 14px', background: 'var(--card-subtle)', cursor: 'pointer',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.background = 'rgba(124,108,255,.06)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
+                >
+                  <span style={{ color: 'var(--accent)', display: 'flex', flexShrink: 0 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>
+                    </svg>
+                  </span>
+                  <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: 'var(--text-2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.title || 'Untitled Page'}
+                  </span>
+                  <span style={{ color: 'var(--text-label)', display: 'flex', flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

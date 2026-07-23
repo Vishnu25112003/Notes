@@ -4,7 +4,9 @@ import { getSectionPages, getSections } from '../api/sections.js';
 import PageTreeSidebar from '../components/tree/PageTreeSidebar.jsx';
 import SearchBar from '../components/common/SearchBar.jsx';
 import Loader from '../components/common/Loader.jsx';
+import ShareModal from '../components/share/ShareModal.jsx';
 import { createPage } from '../api/pages.js';
+import { getShareSettings } from '../api/share.js';
 
 const GRID_BG = {
   backgroundColor: 'var(--bg)',
@@ -25,6 +27,13 @@ const DocIcon = () => (
   </svg>
 );
 
+const ShareIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
+  </svg>
+);
+
 export default function SectionWorkspace() {
   const { sectionId, pageId } = useParams();
   const [pages, setPages] = useState([]);
@@ -32,7 +41,16 @@ export default function SectionWorkspace() {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+  const [sharing, setSharing] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const navigate = useNavigate();
+
+  const refreshPending = () => {
+    getShareSettings('section', sectionId)
+      .then(s => setPendingRequests(s.requests.length))
+      .catch(() => {});
+  };
+  useEffect(() => { refreshPending(); }, [sectionId]);
 
   useEffect(() => {
     const onResize = () => {
@@ -117,6 +135,8 @@ export default function SectionWorkspace() {
               sectionId={sectionId}
               currentPageId={pageId}
               onRefresh={load}
+              onShareSection={() => setSharing(true)}
+              sectionPending={pendingRequests}
             />
           </div>
         )}
@@ -145,7 +165,23 @@ export default function SectionWorkspace() {
                     </span>
                   </span>
                 </div>
-                {!isMobile && <SearchBar />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  <button
+                    onClick={() => setSharing(true)}
+                    title="Share this whole section"
+                    style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, letterSpacing: '0.07em', color: 'var(--text-mid)', background: 'var(--card-subtle)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 10px', cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-mid)'; }}
+                  >
+                    <ShareIcon /> SHARE SECTION
+                    {pendingRequests > 0 && (
+                      <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 16, height: 16, borderRadius: 9, background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                        {pendingRequests}
+                      </span>
+                    )}
+                  </button>
+                  {!isMobile && <SearchBar />}
+                </div>
               </div>
 
               {/* Empty / select-page state */}
@@ -206,6 +242,15 @@ export default function SectionWorkspace() {
           )}
         </div>
       </div>
+
+      {sharing && (
+        <ShareModal
+          type="section"
+          id={sectionId}
+          noun="section"
+          onClose={() => { setSharing(false); refreshPending(); }}
+        />
+      )}
     </div>
   );
 }

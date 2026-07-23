@@ -1,12 +1,36 @@
 import mongoose from 'mongoose';
 import SimpleNote from '../models/SimpleNote.js';
 import Page from '../models/Page.js';
+import Section from '../models/Section.js';
 import User from '../models/User.js';
 import { flattenTipTap } from '../lib/flattenTipTap.js';
 
 function getModel(type) {
   if (type === 'note') return SimpleNote;
   if (type === 'page') return Page;
+  if (type === 'section') return Section;
+  return null;
+}
+
+// Sections are containers — they have no content of their own to view/edit/clone directly
+function hasContent(type) {
+  return type === 'note' || type === 'page';
+}
+
+// A page is accessible either through its own share or through its section's share.
+// Returns the share that granted access (so public opens can be persisted there), or null.
+async function effectivePageAccess(page, userId) {
+  const pageShare = normalizeShare(page);
+  if (hasAccess(pageShare, userId)) {
+    return { share: pageShare, doc: page };
+  }
+  const section = await Section.findById(page.sectionId);
+  if (section) {
+    const sectionShare = normalizeShare(section);
+    if (hasAccess(sectionShare, userId)) {
+      return { share: sectionShare, doc: section };
+    }
+  }
   return null;
 }
 
@@ -101,9 +125,10 @@ async function loadOwnedDoc(req, res) {
 
 export async function listSharedWithMe(req, res) {
   const query = { 'share.sharedWith.userId': req.user.id };
-  const [notes, pages] = await Promise.all([
+  const [notes, pages, sections] = await Promise.all([
     SimpleNote.find(query).select('title userId share updatedAt').populate('userId', 'username'),
     Page.find(query).select('title userId share updatedAt').populate('userId', 'username'),
+    Section.find(query).select('title userId share updatedAt').populate('userId', 'username'),
   ]);
   const toEntry = (doc, type) => {
     const share = normalizeShare(doc);
@@ -123,6 +148,7 @@ export async function listSharedWithMe(req, res) {
   const items = [
     ...notes.map(n => toEntry(n, 'note')),
     ...pages.map(p => toEntry(p, 'page')),
+    ...sections.map(s => toEntry(s, 'section')),
   ].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   res.json(items);
 }
@@ -135,8 +161,8 @@ export async function pendingRequestCount(req, res) {
       { $project: { n: { $size: '$share.requests' } } },
       { $group: { _id: null, total: { $sum: '$n' } } },
     ]).then(r => r[0]?.total || 0);
-  const [a, b] = await Promise.all([countFor(SimpleNote), countFor(Page)]);
-  res.json({ count: a + b });
+  const [a, b, c] = await Promise.all([countFor(SimpleNote), countFor(Page), countFor(Section)]);
+  res.json({ count: a + b + c });
 }
 
 export async function resolveShared(req, res) {
@@ -151,6 +177,28 @@ export async function resolveShared(req, res) {
     return res.json({ status: 'owner', native });
   }
 
+  // A page may be reached through its own share or the share of its section
+  if (type === 'page') {
+    const access = await effectivePageAccess(doc, req.user.id);
+    if (!access) {
+      const requestPending = normalizeShare(doc).requests.some(r => String(r.userId) === String(req.user.id));
+      return res.json({ status: 'denied', requestPending });
+    }
+    if (upsertSharedWith(access.share, req.user.id, req.user.username, 'public')) {
+      await access.doc.save();
+    }
+    const owner = await User.findById(doc.userId).select('username');
+    return res.json({
+      status: 'ok',
+      kind: 'doc',
+      note: { id: doc._id, type, title: doc.title, content: doc.content, updatedAt: doc.updatedAt },
+      owner: owner?.username || 'unknown',
+      permission: access.share.permission,
+      allowClone: access.share.allowClone,
+      visibility: access.share.visibility,
+    });
+  }
+
   const share = normalizeShare(doc);
   if (!hasAccess(share, req.user.id)) {
     const requestPending = share.requests.some(r => String(r.userId) === String(req.user.id));
@@ -163,8 +211,33 @@ export async function resolveShared(req, res) {
   }
 
   const owner = await User.findById(doc.userId).select('username');
+
+  // Sections resolve to a browsable list of their pages rather than content
+  if (type === 'section') {
+    const pages = await Page.find({ sectionId: doc._id })
+      .select('title parentId order updatedAt')
+      .sort({ order: 1 });
+    return res.json({
+      status: 'ok',
+      kind: 'section',
+      section: { id: doc._id, title: doc.title, updatedAt: doc.updatedAt },
+      pages: pages.map(p => ({
+        id: p._id,
+        title: p.title,
+        parentId: p.parentId,
+        order: p.order,
+        updatedAt: p.updatedAt,
+      })),
+      owner: owner?.username || 'unknown',
+      permission: share.permission,
+      allowClone: share.allowClone,
+      visibility: share.visibility,
+    });
+  }
+
   res.json({
     status: 'ok',
+    kind: 'doc',
     note: { id: doc._id, type, title: doc.title, content: doc.content, updatedAt: doc.updatedAt },
     owner: owner?.username || 'unknown',
     permission: share.permission,
@@ -175,14 +248,19 @@ export async function resolveShared(req, res) {
 
 export async function updateSharedContent(req, res) {
   const { type, id } = req.params;
-  if (!getModel(type)) return res.status(400).json({ error: 'Invalid type' });
+  if (!hasContent(type)) return res.status(400).json({ error: 'Invalid type' });
   const doc = await loadDoc(type, id);
   if (!doc) return res.status(404).json({ error: 'Not found' });
 
-  const share = normalizeShare(doc);
   const owner = isOwner(doc, req.user.id);
-  if (!owner && (!hasAccess(share, req.user.id) || share.permission !== 'edit')) {
-    return res.status(403).json({ error: 'No edit access' });
+  if (!owner) {
+    // Pages inherit edit access from their section share; notes use their own
+    const access = type === 'page'
+      ? await effectivePageAccess(doc, req.user.id)
+      : (hasAccess(normalizeShare(doc), req.user.id) ? { share: normalizeShare(doc) } : null);
+    if (!access || access.share.permission !== 'edit') {
+      return res.status(403).json({ error: 'No edit access' });
+    }
   }
 
   const { title, content } = req.body;
@@ -203,6 +281,11 @@ export async function requestAccess(req, res) {
   if (!doc) return res.status(404).json({ error: 'Not found' });
   if (isOwner(doc, req.user.id)) return res.status(400).json({ error: 'You own this note' });
 
+  // A page granted through its section needs no separate request
+  if (type === 'page' && await effectivePageAccess(doc, req.user.id)) {
+    return res.json({ status: 'already-has-access' });
+  }
+
   const share = normalizeShare(doc);
   if (hasAccess(share, req.user.id)) return res.json({ status: 'already-has-access' });
   if (share.requests.some(r => String(r.userId) === String(req.user.id))) {
@@ -219,10 +302,51 @@ export async function cloneShared(req, res) {
   const doc = await loadDoc(type, id);
   if (!doc) return res.status(404).json({ error: 'Not found' });
 
-  const share = normalizeShare(doc);
   const owner = isOwner(doc, req.user.id);
-  if (!owner && !hasAccess(share, req.user.id)) return res.status(403).json({ error: 'No access' });
+
+  // Resolve the share that authorizes cloning (a page may inherit it from its section)
+  let share;
+  if (type === 'page' && !owner) {
+    const access = await effectivePageAccess(doc, req.user.id);
+    if (!access) return res.status(403).json({ error: 'No access' });
+    share = access.share;
+  } else {
+    share = normalizeShare(doc);
+    if (!owner && !hasAccess(share, req.user.id)) return res.status(403).json({ error: 'No access' });
+  }
   if (!share.allowClone && !owner) return res.status(403).json({ error: 'Cloning disabled by owner' });
+
+  // Cloning a section copies it and every page into the receiver's account
+  if (type === 'section') {
+    const section = await Section.create({ userId: req.user.id, title: doc.title });
+    const pages = await Page.find({ sectionId: doc._id }).sort({ order: 1 });
+    const idMap = new Map(); // old page id -> new page id
+
+    // Pass 1: create every page (parent links wired up afterwards)
+    for (const p of pages) {
+      const content = sanitizeContentForClone(p.content);
+      const created = await Page.create({
+        userId: req.user.id,
+        sectionId: section._id,
+        parentId: null,
+        title: p.title,
+        content,
+        order: p.order,
+        searchText: flattenTipTap(content),
+      });
+      idMap.set(String(p._id), created._id);
+    }
+    // Pass 2: remap parentId now that all clones exist, preserving the tree
+    await Promise.all(
+      pages
+        .filter(p => p.parentId && idMap.has(String(p.parentId)))
+        .map(p => Page.updateOne(
+          { _id: idMap.get(String(p._id)) },
+          { parentId: idMap.get(String(p.parentId)) }
+        ))
+    );
+    return res.status(201).json({ id: section._id });
+  }
 
   const content = sanitizeContentForClone(doc.content);
   const note = await SimpleNote.create({

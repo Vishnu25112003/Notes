@@ -48,7 +48,7 @@ function Segmented({ value, options, onChange, disabled }) {
   );
 }
 
-export default function ShareModal({ type, id, onClose }) {
+export default function ShareModal({ type, id, onClose, noun = 'note' }) {
   const [settings, setSettings] = useState(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -128,8 +128,8 @@ export default function ShareModal({ type, id, onClose }) {
             />
             <div style={{ fontFamily: SANS, fontSize: 12, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>
               {settings.visibility === 'public'
-                ? 'Anyone with the link who is signed in can access this note.'
-                : 'Only people you add or approve below can access this note.'}
+                ? `Anyone with the link who is signed in can access this ${noun}.`
+                : `Only people you add or approve below can access this ${noun}.`}
             </div>
           </div>
 
@@ -144,8 +144,8 @@ export default function ShareModal({ type, id, onClose }) {
             />
             <div style={{ fontFamily: SANS, fontSize: 12, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>
               {settings.permission === 'edit'
-                ? 'People with access can edit this note.'
-                : 'People with access can only view this note.'}
+                ? `People with access can edit this ${noun}${noun === 'section' ? "'s pages" : ''}.`
+                : `People with access can only view this ${noun}.`}
             </div>
           </div>
 
@@ -154,7 +154,7 @@ export default function ShareModal({ type, id, onClose }) {
             <div>
               <div style={{ ...label, marginBottom: 3 }}>ALLOW CLONE</div>
               <div style={{ fontFamily: SANS, fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.4 }}>
-                Let receivers copy this note into their own account.
+                Let receivers copy this {noun} into their own account.
               </div>
             </div>
             <button

@@ -177,7 +177,14 @@ function PageNode({ page, allPages, sectionId, currentPageId, depth = 0, onRefre
   );
 }
 
-export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRefresh }) {
+const ShareIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
+  </svg>
+);
+
+export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRefresh, onShareSection, sectionPending = 0 }) {
   const navigate = useNavigate();
   const [newPageTarget, setNewPageTarget] = useState(null);
   const topLevel = pages.filter(p => !p.parentId).sort((a, b) => a.order - b.order);
@@ -196,7 +203,25 @@ export default function PageTreeSidebar({ pages, sectionId, currentPageId, onRef
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-label)', padding: '14px 8px 10px 16px' }}>PAGES</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 10px 10px 16px' }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-label)' }}>PAGES</span>
+        {onShareSection && (
+          <button
+            onClick={onShareSection}
+            title="Share this whole section"
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, letterSpacing: '0.07em', color: 'var(--text-dim)', background: 'none', border: '1px solid var(--border-faint)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,108,255,.5)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-faint)'; e.currentTarget.style.color = 'var(--text-dim)'; }}
+          >
+            <ShareIcon /> SHARE
+            {sectionPending > 0 && (
+              <span style={{ position: 'absolute', top: -6, right: -6, minWidth: 15, height: 15, borderRadius: 8, background: 'var(--accent)', color: 'var(--accent-fg)', fontSize: 8.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
+                {sectionPending}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px' }}>
         {topLevel.map(page => (
