@@ -44,7 +44,7 @@ function getDepth(pages, pageId) {
 
 export default function PageEditor() {
   const { pageId } = useParams();
-  const { pages, section, renamed, onRefresh, setSidebarOpen, isMobile = false } = useOutletContext();
+  const { pages, section, renamed, onRefresh, sidebarOpen = true, setSidebarOpen, isMobile = false } = useOutletContext();
   const [page, setPage] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(null);
@@ -106,11 +106,12 @@ export default function PageEditor() {
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border-faint)', flexShrink: 0, gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, overflow: 'hidden' }}>
-          {isMobile && (
+          {(isMobile || !sidebarOpen) && (
             <button
               onClick={() => setSidebarOpen(true)}
+              aria-label="Show sidebar"
               style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, padding: '2px 4px' }}
-              title="Open page list"
+              title={isMobile ? 'Open page list' : 'Show sidebar'}
             ><MenuIcon /></button>
           )}
           <Breadcrumbs section={section} pages={pages} currentPageId={pageId} />

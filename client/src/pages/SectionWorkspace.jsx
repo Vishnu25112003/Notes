@@ -34,13 +34,28 @@ const ShareIcon = () => (
   </svg>
 );
 
+const COLLAPSED_KEY = 'ns_sidebar_collapsed';
+const readCollapsed = () => {
+  try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; }
+};
+
 export default function SectionWorkspace() {
   const { sectionId, pageId } = useParams();
   const [pages, setPages] = useState([]);
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+  // On desktop the sidebar remembers whether it was minimized; on mobile it is a drawer that starts closed.
+  const [sidebarOpen, setSidebarOpenState] = useState(() => window.innerWidth >= 768 && !readCollapsed());
+  const setSidebarOpen = next => {
+    setSidebarOpenState(prev => {
+      const open = typeof next === 'function' ? next(prev) : next;
+      if (window.innerWidth >= 768) {
+        try { localStorage.setItem(COLLAPSED_KEY, open ? '0' : '1'); } catch { /* storage unavailable */ }
+      }
+      return open;
+    });
+  };
   const [sharing, setSharing] = useState(false);
   const [pendingRequests, setPendingRequests] = useState(0);
   const navigate = useNavigate();
@@ -55,8 +70,10 @@ export default function SectionWorkspace() {
   useEffect(() => {
     const onResize = () => {
       const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) setSidebarOpen(true);
+      setIsMobile(wasMobile => {
+        if (wasMobile !== mobile) setSidebarOpenState(!mobile && !readCollapsed());
+        return mobile;
+      });
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -107,6 +124,8 @@ export default function SectionWorkspace() {
 
   if (loading) return <Loader fullScreen />;
 
+  const sidebarWidth = pageId ? 230 : 280;
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
       <div style={{ height: 3, background: 'linear-gradient(90deg,var(--accent),var(--accent-2) 55%,transparent)', flexShrink: 0 }} />
@@ -125,22 +144,27 @@ export default function SectionWorkspace() {
         )}
 
         {/* Sidebar */}
-        {sidebarOpen && (
-          <div style={isMobile ? {
-            position: 'fixed',
-            top: 0, left: 0, bottom: 0,
-            width: 280, zIndex: 50,
-            background: 'var(--bg-sidebar)',
-            borderRight: '1px solid var(--border-faint)',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '8px 0 32px rgba(0,0,0,.3)',
-          } : {
-            width: pageId ? 230 : 280,
-            flexShrink: 0,
-            borderRight: '1px solid var(--border-faint)',
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            transition: 'width 0.2s',
-          }}>
+        {(sidebarOpen || !isMobile) && (
+          <div
+            inert={!sidebarOpen}
+            style={isMobile ? {
+              position: 'fixed',
+              top: 0, left: 0, bottom: 0,
+              width: 280, zIndex: 50,
+              background: 'var(--bg-sidebar)',
+              borderRight: '1px solid var(--border-faint)',
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              boxShadow: '8px 0 32px rgba(0,0,0,.3)',
+            } : {
+              width: sidebarOpen ? sidebarWidth : 0,
+              flexShrink: 0,
+              borderRight: sidebarOpen ? '1px solid var(--border-faint)' : 'none',
+              overflow: 'hidden',
+              transition: 'width 0.2s cubic-bezier(.22,1,.36,1)',
+            }}
+          >
+            {/* Fixed-width inner so the tree slides out instead of squashing while the width animates */}
+            <div style={{ width: isMobile ? '100%' : sidebarWidth, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 14px 4px' }}>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-label)' }}>PAGES</span>
@@ -159,7 +183,9 @@ export default function SectionWorkspace() {
               onRenamed={handleRenamed}
               onShareSection={() => setSharing(true)}
               sectionPending={pendingRequests}
+              onCollapse={isMobile ? undefined : () => setSidebarOpen(false)}
             />
+            </div>
           </div>
         )}
 
@@ -174,6 +200,8 @@ export default function SectionWorkspace() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1, overflow: 'hidden' }}>
                   <button
                     onClick={() => setSidebarOpen(o => !o)}
+                    title={sidebarOpen ? 'Minimize sidebar' : 'Show sidebar'}
+                    aria-label={sidebarOpen ? 'Minimize sidebar' : 'Show sidebar'}
                     style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                   ><MenuIcon /></button>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: '0.06em', color: 'var(--text-dim)', minWidth: 0, overflow: 'hidden' }}>

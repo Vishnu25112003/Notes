@@ -27,9 +27,16 @@ export async function getNote(req, res) {
 
 export async function updateNote(req, res) {
   const { title, content } = req.body;
+  // Only touch the fields that were sent, so a rename can't clear the note body.
+  const update = {};
+  if (title !== undefined) update.title = title;
+  if (content !== undefined) {
+    update.content = content;
+    update.searchText = flattenTipTap(content);
+  }
   const note = await SimpleNote.findOneAndUpdate(
     { _id: req.params.id, userId: req.user.id },
-    { title, content, searchText: flattenTipTap(content) },
+    update,
     { new: true }
   );
   if (!note) return res.status(404).json({ error: 'Not found' });
