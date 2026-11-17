@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import { getSectionPages, getSections } from '../api/sections.js';
+import { getSectionPages, getSections, reorderSectionPages } from '../api/sections.js';
 import PageTreeSidebar from '../components/tree/PageTreeSidebar.jsx';
 import SearchBar from '../components/common/SearchBar.jsx';
 import Loader from '../components/common/Loader.jsx';
@@ -79,6 +79,26 @@ export default function SectionWorkspace() {
 
   useEffect(() => { load(); }, [sectionId]);
 
+  // Apply the new sibling order straight away, then persist; reload if the save fails.
+  const handleReorder = async (parentId, orderedIds) => {
+    const position = new Map(orderedIds.map((id, i) => [String(id), i]));
+    setPages(prev => prev.map(p => (
+      position.has(String(p._id)) ? { ...p, order: position.get(String(p._id)) } : p
+    )));
+    try {
+      await reorderSectionPages(sectionId, { parentId: parentId || null, orderedIds });
+    } catch {
+      load();
+    }
+  };
+
+  // A rename from the sidebar: update the tree now and tell the open editor, which keeps its own title.
+  const [renamed, setRenamed] = useState(null);
+  const handleRenamed = (id, title) => {
+    setPages(prev => prev.map(p => (String(p._id) === String(id) ? { ...p, title } : p)));
+    setRenamed({ id: String(id), title });
+  };
+
   const handleAddFirstPage = async () => {
     const page = await createPage({ sectionId, parentId: null, title: 'Untitled Page' });
     load();
@@ -135,6 +155,8 @@ export default function SectionWorkspace() {
               sectionId={sectionId}
               currentPageId={pageId}
               onRefresh={load}
+              onReorder={handleReorder}
+              onRenamed={handleRenamed}
               onShareSection={() => setSharing(true)}
               sectionPending={pendingRequests}
             />
@@ -144,7 +166,7 @@ export default function SectionWorkspace() {
         {/* Main content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           {pageId ? (
-            <Outlet context={{ pages, section, onRefresh: load, sidebarOpen, setSidebarOpen, isMobile }} />
+            <Outlet context={{ pages, section, renamed, onRefresh: load, sidebarOpen, setSidebarOpen, isMobile }} />
           ) : (
             <>
               {/* Workspace header (no page selected) */}

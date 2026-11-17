@@ -44,7 +44,7 @@ function getDepth(pages, pageId) {
 
 export default function PageEditor() {
   const { pageId } = useParams();
-  const { pages, section, onRefresh, setSidebarOpen, isMobile = false } = useOutletContext();
+  const { pages, section, renamed, onRefresh, setSidebarOpen, isMobile = false } = useOutletContext();
   const [page, setPage] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(null);
@@ -72,6 +72,11 @@ export default function PageEditor() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [pageId]);
+
+  // The page was renamed from the sidebar menu; adopt it so autosave doesn't write the old title back.
+  useEffect(() => {
+    if (renamed && renamed.id === String(pageId)) setTitle(renamed.title);
+  }, [renamed]);
 
   const contentKey = JSON.stringify(content);
   const saveStatus = useAutosave(
