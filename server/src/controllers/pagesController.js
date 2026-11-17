@@ -69,3 +69,35 @@ export async function movePage(req, res) {
   if (!page) return res.status(404).json({ error: 'Not found' });
   res.json(page);
 }
+
+// Rewrites the order of every page under one parent. `orderedIds` is the new
+// top-to-bottom order; siblings it doesn't mention keep their place after it.
+export async function reorderPages(req, res) {
+  const { parentId, orderedIds } = req.body;
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return res.status(400).json({ error: 'orderedIds must be a non-empty array' });
+  }
+  const ids = orderedIds.map(String);
+  const siblings = await Page.find({
+    sectionId: req.params.id,
+    userId: req.user.id,
+    parentId: parentId || null,
+  }).select('_id').sort({ order: 1 });
+  const siblingIds = siblings.map(s => String(s._id));
+  const known = new Set(siblingIds);
+
+  if (new Set(ids).size !== ids.length || ids.some(id => !known.has(id))) {
+    return res.status(400).json({ error: 'orderedIds must be pages under the same parent' });
+  }
+
+  const listed = new Set(ids);
+  const finalOrder = [...ids, ...siblingIds.filter(id => !listed.has(id))];
+  await Page.bulkWrite(finalOrder.map((id, index) => ({
+    updateOne: {
+      filter: { _id: id, userId: req.user.id },
+      update: { $set: { order: index } },
+      timestamps: false,
+    },
+  })));
+  res.json({ ok: true });
+}
