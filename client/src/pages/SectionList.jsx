@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSections, createSection, deleteSection } from '../api/sections.js';
+import { getSections, createSection, updateSection, deleteSection } from '../api/sections.js';
 import Loader from '../components/common/Loader.jsx';
 import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
 import Modal from '../components/common/Modal.jsx';
 import ThemeToggle from '../components/common/ThemeToggle.jsx';
+import { MenuButton, RenameInput, PencilIcon, TrashIcon } from '../components/common/ActionMenu.jsx';
 
 const GRID_BG = {
   backgroundColor: 'var(--bg)',
@@ -48,6 +49,7 @@ export default function SectionList() {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const navigate = useNavigate();
@@ -64,6 +66,13 @@ export default function SectionList() {
     setCreating(false);
     setNewTitle('');
     navigate(`/sections/${s._id}`);
+  };
+
+  const handleRename = async (section, title) => {
+    setRenamingId(null);
+    setSections(prev => prev.map(s => (s._id === section._id ? { ...s, title } : s)));
+    try { await updateSection(section._id, { title }); }
+    catch { load(); }
   };
 
   const handleDelete = async () => {
@@ -122,7 +131,7 @@ export default function SectionList() {
           return (
             <div
               key={s._id}
-              onClick={() => navigate(`/sections/${s._id}`)}
+              onClick={() => { if (renamingId !== s._id) navigate(`/sections/${s._id}`); }}
               style={{
                 position: 'relative',
                 border: '1px solid var(--border)',
@@ -138,22 +147,28 @@ export default function SectionList() {
             >
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color }} />
               <div style={{ color, marginTop: 6 }}><LayersIcon color={color} /></div>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 16 }}>{s.title}</div>
+              {renamingId === s._id ? (
+                <RenameInput
+                  className="card-rename-input"
+                  label="Section name"
+                  initial={s.title}
+                  onSave={title => handleRename(s, title)}
+                  onCancel={() => setRenamingId(null)}
+                />
+              ) : (
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 16 }}>{s.title}</div>
+              )}
               <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)', letterSpacing: '0.08em', marginTop: 8 }}>
                 UPDATED {relativeTime(s.updatedAt)}
               </div>
-              <button
-                onClick={e => { e.stopPropagation(); setDeleteTarget(s); }}
-                style={{
-                  position: 'absolute', top: 10, right: 10,
-                  background: 'var(--border-faint)', border: '1px solid var(--border-faint)',
-                  color: 'var(--text-dim)', cursor: 'pointer',
-                  fontSize: 15, lineHeight: 1, padding: '4px 7px', borderRadius: 5,
-                }}
-                className="delete-btn"
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--error)'; e.currentTarget.style.background = 'var(--error-bg)'; e.currentTarget.style.borderColor = 'var(--error-border)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'var(--border-faint)'; e.currentTarget.style.borderColor = 'var(--border-faint)'; }}
-              >×</button>
+              <MenuButton
+                className="card-menu-btn"
+                label={`Options for ${s.title}`}
+                items={[
+                  { label: 'Rename', icon: <PencilIcon />, onSelect: () => setRenamingId(s._id) },
+                  { label: 'Delete', icon: <TrashIcon />, danger: true, onSelect: () => setDeleteTarget(s) },
+                ]}
+              />
             </div>
           );
         })}
@@ -182,9 +197,22 @@ export default function SectionList() {
       </div>
 
       <style>{`
-        .delete-btn { opacity: 0; transition: opacity 0.15s; }
-        div:hover > .delete-btn { opacity: 1; }
-        @media (hover: none) { .delete-btn { opacity: 1; } }
+        .card-menu-btn {
+          position: absolute; top: 10px; right: 10px;
+          display: flex; align-items: center; justify-content: center; width: 28px; height: 24px; padding: 0;
+          background: var(--border-faint); border: 1px solid var(--border-faint); border-radius: 6px;
+          color: var(--text-dim); cursor: pointer;
+          opacity: 0; transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+        }
+        div:hover > .card-menu-btn, .card-menu-btn.is-open, .card-menu-btn:focus-visible { opacity: 1; }
+        .card-menu-btn:hover, .card-menu-btn.is-open { color: var(--text); border-color: var(--border); }
+        .card-menu-btn:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 1px; }
+        @media (hover: none) { .card-menu-btn { opacity: 1; } }
+        .card-rename-input {
+          display: block; width: calc(100% + 16px); margin: 13px -8px -3px; padding: 2px 7px;
+          font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 600; color: var(--text);
+          background: var(--surface); border: 1px solid var(--accent); border-radius: 6px; outline: none;
+        }
       `}</style>
 
       {creating && (
