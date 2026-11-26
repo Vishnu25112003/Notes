@@ -7,14 +7,15 @@ import {
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import { generateSecret, generate as generateTotp, verify as verifyTotp, generateURI } from 'otplib';
 import qrcode from 'qrcode';
-import { randomUUID } from 'crypto';
 import User from '../models/User.js';
 import { setChallenge, getChallenge, deleteChallenge } from '../lib/challengeStore.js';
+import { seal, open, isSealed } from '../lib/secretBox.js';
+import { addSessionToUser, setSessionCookie, clearSessionCookie, getRequestToken, hashToken } from '../lib/session.js';
+import { findSessionUser } from '../middleware/requireAuth.js';
 
 const RP_NAME   = 'Notespace';
 const RP_ID     = process.env.RP_ID || 'localhost';
 const RP_ORIGIN = process.env.RP_ORIGIN || 'http://localhost:5173';
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
 
 // Pending multi-step registrations: username → { credential, totpSecret, expiresAt }
@@ -24,20 +25,27 @@ const PENDING_TTL = 30 * 60 * 1000;
 // WebAuthn auth failure tracking: username → { count, expiresAt }
 const authFailures = new Map();
 
-function createSession() {
-  return {
-    token: randomUUID(),
-    expiresAt: new Date(Date.now() + SESSION_DURATION_MS),
-    createdAt: new Date(),
-  };
+// Starts a session: stores its hash on the user, saves, and sets the httpOnly cookie
+async function signIn(res, user) {
+  const token = addSessionToUser(user);
+  await user.save();
+  setSessionCookie(res, token);
+  res.json({ username: user.username });
 }
 
-function addSessionToUser(user) {
-  const session = createSession();
-  user.sessions = user.sessions.filter(s => s.expiresAt > new Date());
-  if (user.sessions.length >= 10) user.sessions.shift();
-  user.sessions.push(session);
-  return session;
+// Verifies a TOTP code against the user's sealed secret, rejecting replays of an already-used time step.
+// Seals a legacy plaintext secret in place. Returns true on success; the caller saves the user.
+async function verifyUserTotp(user, code) {
+  const secret = isSealed(user.totpSecret) ? open(user.totpSecret) : user.totpSecret;
+  const result = await verifyTotp({
+    token: code,
+    secret,
+    ...(user.totpLastStep != null && { afterTimeStep: user.totpLastStep }),
+  });
+  if (!result.valid) return false;
+  user.totpLastStep = result.timeStep;
+  if (!isSealed(user.totpSecret)) user.totpSecret = seal(secret);
+  return true;
 }
 
 // ── Registration ──────────────────────────────────────────────────────────────
@@ -151,16 +159,14 @@ export async function totpVerifySetup(req, res) {
 
   const user = new User({
     username,
-    totpSecret:          pending.totpSecret,
+    totpSecret:          seal(pending.totpSecret),
     totpVerified:        true,
+    totpLastStep:        result.timeStep,
     webAuthnCredentials: pending.credential ? [pending.credential] : [],
   });
 
-  const session = addSessionToUser(user);
-  await user.save();
   pendingRegistrations.delete(username);
-
-  res.json({ token: session.token, username });
+  await signIn(res, user);
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────────
@@ -244,10 +250,7 @@ export async function webAuthnAuthVerify(req, res) {
   if (!verification.verified) return res.status(400).json({ error: 'Verification failed' });
 
   storedCred.counter = verification.authenticationInfo.newCounter;
-  const session = addSessionToUser(user);
-  await user.save();
-
-  res.json({ token: session.token, username });
+  await signIn(res, user);
 }
 
 export async function loginTotp(req, res) {
@@ -257,38 +260,30 @@ export async function loginTotp(req, res) {
   const user = await User.findOne({ username, totpVerified: true });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const result = await verifyTotp({ token: code, secret: user.totpSecret });
-  if (!result.valid) return res.status(401).json({ error: 'Invalid TOTP code' });
-
-  const session = addSessionToUser(user);
-  await user.save();
-
-  res.json({ token: session.token, username });
+  if (!(await verifyUserTotp(user, String(code)))) {
+    return res.status(401).json({ error: 'Invalid TOTP code' });
+  }
+  await signIn(res, user);
 }
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
 export async function sessionVerify(req, res) {
-  const token = req.headers.authorization?.slice(7);
-  if (!token) return res.json({ valid: false });
-
-  const user = await User.findOne({ 'sessions.token': token });
+  const user = await findSessionUser(req);
   if (!user) return res.json({ valid: false });
-
-  const session = user.sessions.find(s => s.token === token);
-  if (!session || session.expiresAt < new Date()) return res.json({ valid: false });
-
   res.json({ valid: true, username: user.username });
 }
 
 export async function sessionLogout(req, res) {
-  const token = req.headers.authorization?.slice(7);
+  const token = getRequestToken(req);
   if (token) {
+    const tokenHash = hashToken(token);
     await User.findOneAndUpdate(
-      { 'sessions.token': token },
-      { $pull: { sessions: { token } } }
+      { 'sessions.tokenHash': tokenHash },
+      { $pull: { sessions: { tokenHash } } }
     );
   }
+  clearSessionCookie(res);
   res.json({ ok: true });
 }
 

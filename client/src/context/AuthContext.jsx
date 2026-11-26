@@ -8,15 +8,15 @@ export function AuthProvider({ children }) {
   const [username, setUsername] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('ns_token');
-    if (!token) { setStatus('unauthenticated'); return; }
+    // Drop the pre-cookie token left behind by older versions of the app
+    try { localStorage.removeItem('ns_token'); } catch { /* storage unavailable */ }
 
-    api.post('/auth/session/verify', {}, { headers: { Authorization: `Bearer ${token}` } })
+    api.post('/auth/session/verify')
       .then(data => {
         if (data.valid) { setUsername(data.username); setStatus('authenticated'); }
-        else { localStorage.removeItem('ns_token'); setStatus('unauthenticated'); }
+        else setStatus('unauthenticated');
       })
-      .catch(() => { localStorage.removeItem('ns_token'); setStatus('unauthenticated'); });
+      .catch(() => setStatus('unauthenticated'));
   }, []);
 
   useEffect(() => {
@@ -25,18 +25,14 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('auth:expired', handler);
   }, []);
 
-  const login = useCallback((token, user) => {
-    localStorage.setItem('ns_token', token);
+  // The server has already set the session cookie by the time this runs
+  const login = useCallback((user) => {
     setUsername(user);
     setStatus('authenticated');
   }, []);
 
   const logout = useCallback(async () => {
-    const token = localStorage.getItem('ns_token');
-    if (token) {
-      await api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-    }
-    localStorage.removeItem('ns_token');
+    await api.post('/auth/logout').catch(() => {});
     setUsername(null);
     setStatus('unauthenticated');
   }, []);

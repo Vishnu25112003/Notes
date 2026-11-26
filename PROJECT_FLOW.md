@@ -53,9 +53,9 @@ Notespace is a classic **client–server SPA** with a clean separation:
 │                          BROWSER (Client)                          │
 │  React 19 SPA (Vite)                                               │
 │   • Pages/Routes  • Contexts (Auth, Theme)  • TipTap  • Excalidraw │
-│   • axios API layer (auto-attaches Bearer token)                   │
+│   • axios API layer (session rides in an httpOnly cookie)          │
 └───────────────────────────────┬───────────────────────────────────┘
-                                 │  HTTPS  /api/*   (JSON, Bearer token)
+                                 │  HTTPS  /api/*   (JSON, session cookie)
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       SERVER (Express 5, Node)                      │
@@ -72,7 +72,8 @@ Notespace is a classic **client–server SPA** with a clean separation:
 ```
 
 **Key architectural principles:**
-- **Stateless HTTP with token auth.** Every protected request carries a `Bearer` session token; the server looks it up on the `User` document.
+- **Cookie session auth.** Every protected request carries the `ns_session` httpOnly cookie (`SameSite=Strict`, `Path=/api`). The server hashes it and looks the hash up on the `User` document. JavaScript never sees the token, so XSS cannot steal it.
+- **Same-origin API.** In production Vercel rewrites `/api/*` to Render (`client/vercel.json`); in dev Vite proxies it. The cookie is therefore first-party everywhere, including iPhone Safari.
 - **Per-user ownership scoping.** Every database query is filtered by `userId`. A user can only ever touch their own data — except through the explicit sharing paths.
 - **Thin controllers, fat models are avoided.** Business logic lives in controllers; models are schema definitions with indexes.
 - **The frontend never talks to Cloudinary/Groq directly.** All third-party calls are proxied through the backend so secrets stay on the server.
@@ -164,7 +165,7 @@ Sharing is embedded (not a separate collection):
 
 | Model | Purpose | Key fields |
 |---|---|---|
-| **User** | Account + credentials | `username` (unique, `[a-zA-Z0-9]{3,20}`), `totpSecret`, `totpVerified`, `webAuthnCredentials[]`, `sessions[]` |
+| **User** | Account + credentials | `username` (unique, `[a-zA-Z0-9]{3,20}`), `totpSecret` (AES-GCM sealed, `v1:…`), `totpVerified`, `totpLastStep` (replay guard), `webAuthnCredentials[]`, `sessions[]` (`tokenHash` = sha256 of the cookie) |
 | **SimpleNote** | A standalone note | `userId`, `title`, `content` (TipTap JSON), `searchText`, `share` |
 | **Section** | Top-level notebook | `userId`, `title` |
 | **Page** | A page inside a section, tree-structured | `userId`, `sectionId`, `parentId` (null = top-level), `title`, `content`, `order`, `searchText`, `share` |
@@ -181,7 +182,7 @@ Sharing is embedded (not a separate collection):
 ### Indexes (why they exist)
 - Text indexes on `{title, searchText}` for SimpleNote and Page → full-text search.
 - `{ userId, updatedAt: -1 }` → fast "my recent notes" listing.
-- `{ 'sessions.token': 1 }` and `{ 'webAuthnCredentials.credentialID': 1 }` → fast auth lookups.
+- `{ 'sessions.tokenHash': 1 }` and `{ 'webAuthnCredentials.credentialID': 1 }` → fast auth lookups.
 - `{ 'share.sharedWith.userId': 1 }` → fast "shared with me" queries.
 
 ---
@@ -209,11 +210,14 @@ The server starts up in this exact order:
 ```
 Incoming request
    → CORS check
-   → JSON body parse
+   → helmet security headers
+   → cookie + JSON body parse
+   → originCheck  (non-GET with a foreign Origin → 403)
+   → apiPerIp rate limit (600/min); /auth/login + /auth/register have stricter limits
    → Route match  (e.g. PUT /api/notes/:id)
    → requireAuth middleware
-        • read "Authorization: Bearer <token>"       → 401 if missing
-        • User.findOne({ 'sessions.token': token })   → 401 if not found
+        • read the ns_session cookie                  → 401 if missing
+        • User.findOne({ 'sessions.tokenHash': sha256(token) }) → 401 if not found
         • check session.expiresAt > now               → 401 if expired
         • set req.user = { id, username }
    → Controller function
@@ -280,7 +284,7 @@ ThemeProvider          (theme applies even before auth resolves)
 
 A single axios instance is the choke point for all server communication:
 - **Base URL:** `${VITE_API_URL || ''}/api` — empty in dev, so requests hit `/api/...` and Vite proxies them to `:5000`.
-- **Request interceptor:** reads `ns_token` from localStorage and sets `Authorization: Bearer <token>` automatically. *Individual API functions never think about tokens.*
+- **No token handling:** the browser sends the httpOnly session cookie automatically. A 401 response fires `auth:expired`, which flips AuthContext to signed-out.
 - **Response interceptor:** returns `response.data` directly (so callers get the body, not the axios envelope). On **401**, it clears the token and dispatches a global `window` event `auth:expired`, then rejects with a plain error string.
 
 The **`auth:expired` event** is the key decoupling mechanism: any 401 anywhere in the app instantly logs the user out app-wide, because `AuthContext` listens for it.
@@ -338,10 +342,11 @@ AuthScreen (entry) → type username → POST /auth/login/check → { exists, ha
 
 ### 8.3 Session lifecycle
 
-- On success the client stores the token in `localStorage['ns_token']` and every subsequent request carries it as a Bearer token.
-- `requireAuth` looks the token up on `User.sessions`, checks `expiresAt` (7 days), and attaches `req.user`.
+- On success the server sets the `ns_session` cookie (httpOnly, SameSite=Strict, Secure in production, 7 days) and stores only its sha256 hash. The response body carries just `{ username }`.
+- `requireAuth` hashes the cookie, looks the hash up on `User.sessions`, checks `expiresAt`, and attaches `req.user`.
+- **TOTP hardening:** secrets are sealed with `TOTP_ENC_KEY` (legacy plaintext ones are sealed on next login or by `node src/scripts/encryptTotpSecrets.js`). A code's time step must be newer than `totpLastStep`, so a seen code can't be replayed. Wrong codes are limited to 5 per 15 minutes per username, and successful logins don't count.
 - Sessions are pruned (expired removed, capped at 10) on each new login.
-- **Logout** pulls the session from the array (`$pull`) and clears the local token.
+- **Logout** pulls the session hash from the array (`$pull`) and clears the cookie.
 - **Add device** (authenticated): an existing user can register an extra passkey via `/auth/device/add-options` + `/device/add-verify` (using `excludeCredentials` so the same authenticator isn't added twice).
 
 **Security caveat (by design/limitation):** the challenge store, `pendingRegistrations`, and login-failure counters are **in-memory** — they don't survive a restart and won't work across multiple server replicas. Fine for a single-instance deployment.
@@ -568,7 +573,9 @@ A single **web service** (`notespace-backend`, Node runtime, `rootDir: server`).
 | `NODE_ENV` | `production` |
 | `PORT` | `5000` |
 | `MONGODB_URI` | MongoDB Atlas connection string |
-| `CLIENT_ORIGIN` | Allowed CORS origin(s) |
+| `CLIENT_ORIGIN` | Allowed CORS origin(s); also the allow-list for the Origin check on writes |
+| `TOTP_ENC_KEY` | 32 random bytes, base64. Seals TOTP secrets. **The server refuses to start without it**; losing it breaks every authenticator login |
+| `TRUST_PROXY` | `true` behind Vercel + Render so rate limits see the client IP |
 | `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | Cloudinary credentials |
 | `GROQ_API_KEY` | AI solver key |
 | `RP_ID` | WebAuthn Relying Party ID (e.g. `psnnotes.vercel.app`) |
@@ -578,6 +585,8 @@ A single **web service** (`notespace-backend`, Node runtime, `rootDir: server`).
 - **Client:** `cd client && npm run dev` (Vite on port 5173, proxies `/api` → `:5000`).
 - **Server:** `cd server && npm run dev` (nodemon on port 5000).
 - **`server/.env`** holds all secrets locally; `RP_ID` defaults to `localhost` and `RP_ORIGIN` to `http://localhost:5173` for local WebAuthn.
+  It must also set `TOTP_ENC_KEY`: generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+- **Security headers (CSP etc.)** live in `client/vercel.json`. `npm run build && npx vite preview` serves the build with the same headers, so CSP breakage shows up locally. The inline theme script in `index.html` is pinned by its sha256 hash, so editing it means updating the hash.
 
 ---
 
@@ -592,12 +601,12 @@ Bringing it all together — a single representative action, **"user renames a p
         ↓
 3. updatePage(pageId, { title, content }) called
         ↓
-4. api/client.js axios interceptor attaches "Authorization: Bearer <ns_token>"
+4. Browser attaches the httpOnly ns_session cookie (same-origin /api)
         ↓
-5. PUT /api/pages/:id  →  Vite proxy (dev) / same origin (prod)
+5. PUT /api/pages/:id  →  Vite proxy (dev) / Vercel rewrite to Render (prod)
         ↓
 6. Express: CORS → JSON parse → route match → requireAuth
-        • token looked up on User.sessions, expiry checked, req.user set
+        • cookie hashed, looked up on User.sessions, expiry checked, req.user set
         ↓
 7. pagesController.updatePage
         • findOneAndUpdate({ _id, userId }, { title, searchText: flattenTipTap(content) })

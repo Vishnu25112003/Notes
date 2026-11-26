@@ -22,6 +22,10 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: TOTP_ENC_KEY
+        sync: false
+      - key: TRUST_PROXY
+        value: "true"
       - key: RP_ID
         value: psnnotes.vercel.app
       - key: RP_ORIGIN

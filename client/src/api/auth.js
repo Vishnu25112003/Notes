@@ -34,11 +34,9 @@ export const loginTotp = (username, code) =>
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
-export const verifySession = (token) =>
-  api.post('/auth/session/verify', {}, { headers: { Authorization: `Bearer ${token}` } });
+export const verifySession = () => api.post('/auth/session/verify');
 
-export const logoutSession = (token) =>
-  api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${token}` } });
+export const logoutSession = () => api.post('/auth/logout');
 
 // ── Add Device ────────────────────────────────────────────────────────────────
 
