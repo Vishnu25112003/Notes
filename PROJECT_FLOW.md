@@ -677,14 +677,23 @@ Vault passkeys are separate credentials from login passkeys (user handle `vault:
 - **Health:** weak (zxcvbn < 3), reused, older than a year, change-after-sharing, and an on-demand Have I Been Pwned range check (only a 5-char SHA-1 prefix leaves the browser; CSP allows `api.pwnedpasswords.com`).
 - **Sharing:** owner looks up a user's public key, compares the safety code, and wraps the item key with ephemeral ECDH + HKDF for them (`VaultShare`). Recipients get read-only view/copy under "Shared with me". The server refuses a share if the recipient's key changed since lookup. Revoking deletes their wrapped key, rotates the item key (re-wrapping remaining shares in the same `PUT`), and flags the item "change this password".
 
-### 17.5 API (`/api/vault`, all behind `requireAuth`; † needs the ticket)
+### 17.5 Unlock a PC with your phone (QR)
 
-`GET /status` · `POST /setup` · `POST /stepup/webauthn-options|webauthn-verify|totp` · `POST /lock` ·
+For browsers or PCs without passkey/PRF support (Linux, Opera, older Windows). Like WhatsApp Web:
+
+1. PC (logged in, vault locked) makes a one-time ECDH P-256 key pair and calls `POST /vault/link` (2-minute `VaultLink`, TTL index, bound to the PC's login-session hash). It shows a QR of `/vault/link#<linkId>.<pcPublicKey>`. The public key is only in the URL fragment, so it never passes through the server and the server can't swap it.
+2. The phone opens the link (same account required; the fragment survives a login redirect), unlocks if needed, and shows the PC's name plus a 6-digit code derived from `linkId + pcPublicKey`, matching the PC screen.
+3. Approving needs a fresh fingerprint (PRF step-up) or authenticator code + master password; the server requires a ticket step-up from the last 2 minutes. The phone encrypts the raw Vault Key to the PC's key (ECDH + HKDF, AAD `ns-link:v1:<linkId>`) and posts it to `POST /vault/link/:id/approve`.
+4. The PC polls `GET /vault/link/:id`; the first poll after approval claims the answer atomically (single use), gets a vault ticket for its own session, decrypts the key and opens the vault. Normal auto-lock rules apply afterwards.
+
+### 17.6 API (`/api/vault`, all behind `requireAuth`; † needs the ticket)
+
+`GET /status` · `POST /setup` · `POST /stepup/webauthn-options|webauthn-verify|totp` · `POST /lock` · `POST /link` · `GET|DELETE /link/:id` · †`GET /link/:id/info` · †`POST /link/:id/approve` ·
 †`GET /meta` · †`PUT /meta/password|recovery|settings` · †`DELETE /meta` · †`POST /passkeys/add-options|add-verify` · †`DELETE /passkeys/:id` ·
 †`GET|POST /items` · †`PUT|DELETE /items/:id` · †`POST /items/:id/restore` · †`DELETE /items/:id/purge` · †`GET|POST /categories` · †`PUT|DELETE /categories/:id` ·
 †`GET /recipients/:username` · †`GET|POST /items/:id/shares` · †`DELETE /shares/:id` · †`GET /shared` · †`DELETE /shared/:id`
 
-Models: `VaultMeta` (one per user), `VaultItem`, `VaultCategory`, `VaultShare`. Every vault response is sent with `Cache-Control: no-store`.
+Models: `VaultMeta` (one per user), `VaultItem`, `VaultCategory`, `VaultShare`, `VaultLink` (QR unlock, 2-minute TTL). Every vault response is sent with `Cache-Control: no-store`.
 
 ---
 

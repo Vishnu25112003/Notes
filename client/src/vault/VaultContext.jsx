@@ -258,6 +258,40 @@ export function VaultProvider({ children }) {
     await enter(raw, m);
   }, [enter, getMetaOnline]);
 
+  // ── QR unlock ───────────────────────────────────────────────────────────────
+
+  // PC: the phone's answer decrypted to the raw Vault Key; the poll that delivered it also opened gate 1
+  const unlockWithLinkAnswer = useCallback(async (raw) => {
+    const m = await getMetaOnline();
+    await enter(raw, m);
+  }, [enter, getMetaOnline]);
+
+  // Phone: a fresh step-up that also yields the raw Vault Key, to encrypt for the PC.
+  // Fingerprint (PRF) or authenticator code + master password; the server requires it within 2 minutes.
+  const rawForTransfer = useCallback(async ({ method, code, password }) => {
+    if (method === 'passkey') {
+      return duringCeremony(async () => {
+        const m = metaRef.current;
+        const device = getDeviceCredential();
+        const { options, prfSalts } = await vaultApi.stepUpOptions();
+        const only = device && options.allowCredentials.some(c => c.id === device) ? device : undefined;
+        const { credential, prf, credentialID } = await assertWithPrf(options, prfSalts, { onlyCredential: only });
+        await vaultApi.stepUpVerify(credential);
+        const pk = m.passkeys.find(p => p.credentialID === credentialID);
+        try {
+          return await unwrapVaultKeyRaw(await prfKek(prf), pk.wrappedKey, SLOT.prf(credentialID));
+        } finally { wipe(prf); }
+      });
+    }
+    await vaultApi.stepUpTotp(code);
+    const m = metaRef.current;
+    try {
+      return await unwrapVaultKeyRaw(await passwordKek(password, m.kdf), m.wrappedKeyPwd, SLOT.pwd);
+    } catch {
+      throw new Error('Wrong master password');
+    }
+  }, [duringCeremony]);
+
   // ── Re-verify gate for reveal / copy / delete / export ──────────────────────
 
   const isRecentlyVerified = useCallback(() => Date.now() - verifiedAtRef.current < REVEAL_GRACE_MS, []);
@@ -597,14 +631,14 @@ export function VaultProvider({ children }) {
     createItem, updateItem, trashItem, restoreItem, purgeItem, resolveConflict, flush,
     saveCategory, deleteCategory,
     changePassword, withRawKey, refreshMeta, updateAutoLock, deleteVault,
-    shareItem, revokeShare, leaveShare, reloadShared, getVaultKey, getRecords,
+    shareItem, revokeShare, leaveShare, reloadShared, getVaultKey, getRecords, unlockWithLinkAnswer, rawForTransfer,
   }), [phase, statusInfo, offline, items, categories, shared, meta, pendingOps, conflicts, mustResetPassword,
     reverify, loadError, autoLockMinutes, refreshStatus, enter, lock, duringCeremony,
     unlockWithPasskey, unlockWithPassword, unlockWithRecovery, unlockOfflinePasskey,
     ensureVerified, forceVerify, cancelVerify, verifyWithPassword, verifyWithPasskey, isRecentlyVerified,
     createItem, updateItem, trashItem, restoreItem, purgeItem, resolveConflict, flush,
     saveCategory, deleteCategory, changePassword, withRawKey, refreshMeta, updateAutoLock, deleteVault,
-    shareItem, revokeShare, leaveShare, reloadShared, getVaultKey, getRecords]);
+    shareItem, revokeShare, leaveShare, reloadShared, getVaultKey, getRecords, unlockWithLinkAnswer, rawForTransfer]);
 
   return <VaultContext.Provider value={value}>{children}</VaultContext.Provider>;
 }

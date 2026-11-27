@@ -215,3 +215,9 @@
 .v-cf { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 @media (max-width: 560px) { .v-cf { grid-template-columns: 1fr auto auto; } .v-cf .v-cf-name { grid-column: 1 / -1; } }
 .v-chevron { transform: rotate(180deg); color: var(--text-dim); flex: none; }
+
+/* QR unlock: dark modules on white so every phone camera reads it, in either theme */
+.v-qr { width: 256px; height: 256px; margin: 4px auto 16px; padding: 12px; background: #ffffff; border-radius: 12px; display: grid; place-items: center; }
+.v-qr img { display: block; width: 232px; height: 232px; image-rendering: pixelated; }
+.v-qr-steps { margin: 0 0 12px; padding-left: 20px; list-style: decimal; color: var(--text-mid); font-size: 14px; line-height: 1.7; }
+.v-qr-steps strong { color: var(--text); letter-spacing: .08em; }

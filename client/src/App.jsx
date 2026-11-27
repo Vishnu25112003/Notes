@@ -21,7 +21,7 @@ function ProtectedRoute({ children }) {
   const location = useLocation();
   if (status === 'loading') return <Loader fullScreen />;
   if (status === 'unauthenticated') {
-    return <Navigate to="/auth" replace state={{ next: location.pathname + location.search }} />;
+    return <Navigate to="/auth" replace state={{ next: location.pathname + location.search + location.hash }} />;
   }
   return children;
 }

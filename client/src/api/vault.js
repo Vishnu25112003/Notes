@@ -56,6 +56,11 @@ export const vaultApi = {
   revokeShare: (shareId) => http.delete(`/shares/${shareId}`),
   shared: () => http.get('/shared'),
   leaveShare: (shareId) => http.delete(`/shared/${shareId}`),
+  linkStart: (deviceName) => http.post('/link', { deviceName }),
+  linkPoll: (id) => http.get(`/link/${id}`),
+  linkCancel: (id) => http.delete(`/link/${id}`),
+  linkInfo: (id) => http.get(`/link/${id}/info`),
+  linkApprove: (id, body) => http.post(`/link/${id}/approve`, body),
 };
 
 // Fire-and-forget lock that survives the tab being hidden or closed

@@ -17,6 +17,7 @@ const ticketSchema = new mongoose.Schema({
   tokenHash:   { type: String, required: true },
   sessionHash: { type: String, required: true }, // dies with the login session it was issued to
   expiresAt:   { type: Date, required: true },
+  issuedAt:    { type: Date, default: Date.now }, // when the step-up happened; approving a QR unlock needs a fresh one
 }, { _id: false });
 
 const vaultMetaSchema = new mongoose.Schema({

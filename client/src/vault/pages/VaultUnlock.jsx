@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { WebAuthnAbortService } from '@simplewebauthn/browser';
 import { useVault } from '../VaultContext.jsx';
 import Icon from '../components/Icon.jsx';
+import QrUnlock from '../components/QrUnlock.jsx';
 import { getDeviceCredential, passkeysSupported, describePasskeyError } from '../lib/passkey.js';
 
 function CodeInput({ value, onChange, autoFocus }) {
@@ -13,6 +14,14 @@ function CodeInput({ value, onChange, autoFocus }) {
       placeholder="000000" autoFocus={autoFocus} aria-label="6-digit authenticator code"
       style={{ fontSize: 22, letterSpacing: '0.35em', textAlign: 'center' }}
     />
+  );
+}
+
+function QrButton({ onClick }) {
+  return (
+    <button type="button" className="v-btn block" onClick={onClick} style={{ marginTop: 10 }}>
+      <Icon name="phone" size={17} /> Unlock with your phone (scan a QR code)
+    </button>
   );
 }
 
@@ -64,7 +73,9 @@ export default function VaultUnlock() {
           <div className="v-lockmark"><Icon name="lock" size={26} /></div>
           <h1 className="v-h1">Vault is locked</h1>
           <p className="v-sub" style={{ marginBottom: 22 }}>
-            {mode === 'recovery'
+            {mode === 'qr'
+              ? 'Scan this code with your phone, where your vault is set up with fingerprint.'
+              : mode === 'recovery'
               ? 'Use your authenticator code and the recovery key you saved when you created the vault.'
               : cachedOnly
                 ? "You're offline. Unlocking uses the encrypted copy saved on this device."
@@ -85,8 +96,11 @@ export default function VaultUnlock() {
               <button type="button" className="v-btn block" onClick={() => switchMode('password')}>
                 Use {cachedOnly ? 'master password' : 'authenticator code + master password'}
               </button>
+              {!cachedOnly && <QrButton onClick={() => switchMode('qr')} />}
             </>
           )}
+
+          {mode === 'qr' && <QrUnlock onBack={() => switchMode(hasPasskeys ? 'passkey' : 'password')} />}
 
           {mode === 'password' && (
             <form onSubmit={e => { e.preventDefault(); run(() => unlockWithPassword(code, password)); }}>
@@ -103,6 +117,7 @@ export default function VaultUnlock() {
               <button type="submit" className="v-btn primary lg block" disabled={busy || !password || (!cachedOnly && code.length !== 6)}>
                 {busy ? 'Unlocking…' : 'Unlock'}
               </button>
+              {!cachedOnly && <QrButton onClick={() => switchMode('qr')} />}
               {hasPasskeys && (
                 <div style={{ textAlign: 'center', marginTop: 12 }}>
                   <button type="button" className="v-linkbtn" onClick={() => switchMode('passkey')}>Use fingerprint instead</button>
