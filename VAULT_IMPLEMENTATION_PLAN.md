@@ -1,6 +1,6 @@
 # 🔐 Vault Mode — Implementation Plan
 
-> **Status:** Planning locked (discussion finished 2026-11-26). Build NOT started. Each phase waits for an explicit go-ahead.
+> **Status:** Phases 0–4 implemented (2026-11-27). Phase 0 is on branch `vault-phase0-auth-hardening`; Phases 1–4 are stacked on `vault-phase1-core`. How it works now is documented in PROJECT_FLOW.md §17.
 > **Scope:** A third mode in Notespace, next to Simple and Section, for storing credentials with zero-knowledge encryption.
 > **Workflow rule:** This document is the source of truth. Any change is proposed first, and the document is updated only after approval.
 
@@ -208,7 +208,8 @@ client/src/api/vault.js
 
 ## 11. New dependencies
 - Server: `helmet`, `express-rate-limit`, `cookie-parser`
-- Client: `hash-wasm` (Argon2id), `@zxcvbn-ts/core` + `@zxcvbn-ts/language-common`, `idb`, `papaparse`, `vite-plugin-pwa`
+- Client: `hash-wasm` (Argon2id), `@zxcvbn-ts/core` + `@zxcvbn-ts/language-common`
+- Built in-house instead of adding packages: IndexedDB wrapper (instead of `idb`), CSV parser (instead of `papaparse`), a small service worker in `client/public/sw.js` (instead of `vite-plugin-pwa`)
 
 ## 12. Build order and checkpoints
 | Phase | Deliverable | Checkpoint |

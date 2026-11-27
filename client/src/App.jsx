@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
@@ -11,6 +12,9 @@ import PageEditor from './pages/PageEditor.jsx';
 import SharedList from './pages/SharedList.jsx';
 import SharedViewer from './pages/SharedViewer.jsx';
 import Loader from './components/common/Loader.jsx';
+
+// The vault pulls in Argon2 (WebAssembly) and the strength dictionaries; load them only when it is opened
+const VaultApp = lazy(() => import('./vault/VaultApp.jsx'));
 
 function ProtectedRoute({ children }) {
   const { status } = useAuth();
@@ -43,6 +47,7 @@ function AppRoutes() {
       </Route>
       <Route path="/shared" element={<ProtectedRoute><SharedList /></ProtectedRoute>} />
       <Route path="/shared/:type/:id" element={<ProtectedRoute><SharedViewer /></ProtectedRoute>} />
+      <Route path="/vault/*" element={<ProtectedRoute><Suspense fallback={<Loader fullScreen />}><VaultApp /></Suspense></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

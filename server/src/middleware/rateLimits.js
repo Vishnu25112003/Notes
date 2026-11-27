@@ -1,6 +1,6 @@
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
-function limiter({ windowMs, limit, message, keyByUsername = false, onlyFailures = false }) {
+function limiter({ windowMs, limit, message, keyByUsername = false, keyByUser = false, onlyFailures = false }) {
   return rateLimit({
     windowMs,
     limit,
@@ -10,9 +10,11 @@ function limiter({ windowMs, limit, message, keyByUsername = false, onlyFailures
     // TRUST_PROXY=true is deliberate (see server.js); per-username limits cover the spoofing case
     validate: { trustProxy: false },
     // Per-username buckets stop distributed guessing against one account; IP buckets stop one client spraying many
-    keyGenerator: keyByUsername
-      ? req => `user:${String(req.body?.username || '').toLowerCase()}`
-      : req => ipKeyGenerator(req.ip),
+    keyGenerator: keyByUser
+      ? req => `uid:${req.user.id}`
+      : keyByUsername
+        ? req => `user:${String(req.body?.username || '').toLowerCase()}`
+        : req => ipKeyGenerator(req.ip),
     handler: (req, res, next, options) => {
       const minutes = Math.ceil(options.windowMs / 60000);
       res.status(429).json({ error: `${message} Try again in ${minutes} minutes.` });
@@ -44,4 +46,10 @@ export const registerPerIp = limiter({
 export const apiPerIp = limiter({
   windowMs: 60 * 1000, limit: 600,
   message: 'Too many requests.',
+});
+
+// Vault step-up runs behind requireAuth, so it is keyed by the signed-in account. Failures only.
+export const vaultStepUpPerUser = limiter({
+  windowMs: FIFTEEN_MIN, limit: 5, keyByUser: true, onlyFailures: true,
+  message: 'Too many failed vault verifications.',
 });
