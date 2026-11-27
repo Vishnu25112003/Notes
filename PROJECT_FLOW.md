@@ -22,6 +22,7 @@
 14. [Export Flow](#14-export-flow)
 15. [Deployment & Environment](#15-deployment--environment)
 16. [End-to-End Request Lifecycle (Summary)](#16-end-to-end-request-lifecycle-summary)
+17. [Vault Flow (Zero-Knowledge Credentials)](#17-vault-flow-zero-knowledge-credentials)
 
 ---
 
@@ -626,6 +627,64 @@ Every other feature — creating notes, drawing, AI-solving, sharing, searching,
 ---
 
 *This document describes the theory and complete flow of Notespace as implemented across the `client/` (React) and `server/` (Express) codebases.*
+
+---
+
+## 17. Vault Flow (Zero-Knowledge Credentials)
+
+The Vault is the third mode (`/vault`). Every credential is encrypted **in the browser**; the server and MongoDB only hold ciphertext and wrapped keys. Design decisions live in `VAULT_IMPLEMENTATION_PLAN.md`.
+
+### 17.1 Keys
+
+```
+master password ─Argon2id(m=64MiB,t=3,p=1)─► KEK_pwd ─┐
+passkey PRF output (per device) ─HKDF──────► KEK_prf ─┼─ each wraps ─► Vault Key (AES-256, random)
+recovery key (13×4 base32) ─HKDF──────────► KEK_rec ─┘                    │
+                                                                           ├─ wraps ─► item key (one per item) ─► item JSON
+                                                                           └─ wraps ─► ECDH P-256 private key (sharing)
+```
+
+- AES-GCM everywhere, with AAD naming the slot: `ns-vault-key:v1:pwd|recovery|prf:<credId>`, `ns-item-key:v1:<id>`, `ns-item:v1:<id>:<version>`. Ciphertext moved between items, slots or versions fails to decrypt.
+- The Vault Key is imported **non-extractable** and lives in a ref inside `VaultProvider` (`client/src/vault/VaultContext.jsx`), never in state or storage. Re-wrapping (new device, new recovery key, password change) unwraps a fresh raw copy with the master password just for that operation.
+- Server-visible fields: owner, `categoryId`, version, timestamps, `deletedAt`, sizes. Titles, URLs, usernames, favourites and custom category names are inside the ciphertext.
+
+### 17.2 Two-gate unlock
+
+1. **Server gate.** `POST /api/vault/stepup/webauthn-*` (vault passkey, `userVerification: required`) or `POST /api/vault/stepup/totp` issues the `ns_vault` ticket: httpOnly, SameSite=Strict, `Path=/api/vault`, sliding expiry equal to the auto-lock setting (max 30 min), stored hashed on `VaultMeta.tickets` and bound to the login session hash. Without it, `/meta`, `/items` etc. return `403 { vaultLocked }`. Failed step-ups return 422 (not 401, which would sign the user out) and are rate-limited per account.
+2. **Browser gate.** PRF output, the master password, or the recovery key unwraps the Vault Key locally. A recovery-key unlock forces a new master password.
+
+Vault passkeys are separate credentials from login passkeys (user handle `vault:<userId>`), so creating one never overwrites the login passkey on the device. The PRF output is stripped from every request body.
+
+### 17.3 Client structure (`client/src/vault/`)
+
+| Path | Role |
+|---|---|
+| `VaultApp.jsx` | Lazy-loaded shell under `/vault/*`: top bar, tabs, routes, re-verify and conflict dialogs |
+| `VaultContext.jsx` | Key in memory, lock rules, decrypt/load, writes, offline outbox, re-verify gate, sharing |
+| `crypto/` | `keys.js` (Argon2id, HKDF, wrap), `items.js` (AAD), `ecdh.js` (share wrap, safety code), `recovery.js`, `generator.js`, `strength.js` (zxcvbn, lazy) |
+| `lib/` | `passkey.js` (PRF ceremonies), `enroll.js`, `offlineStore.js` (IndexedDB), `clipboard.js`, `csv.js`, `backup.js`, `hibp.js`, `categories.js` |
+| `pages/` | Setup wizard, Unlock, Items (list + detail + editor), Shared with me, Trash, Health, Settings (+ import/export, categories) |
+
+### 17.4 Behaviour
+
+- **Lock:** manual, idle timer (1/5/15/30 min), immediately on `visibilitychange: hidden` (suppressed during passkey prompts and file pickers), and when leaving `/vault`. Locking drops the key and all decrypted data and calls `/vault/lock`.
+- **Re-verify:** reveal, copy, edit, delete, share and breach check ask for the passkey or master password unless verified in the last 60 s. Plain CSV export and deleting the vault always ask for the master password.
+- **Clipboard:** copies clear after 30 s if the clipboard still holds the copied value.
+- **Versions and conflicts:** `PUT /items/:id` needs `expectedVersion`; a stale write gets `409` with the server copy, and the conflict dialog offers keep mine / keep theirs / keep both. Password changes push the old one into an encrypted history (last 10).
+- **Trash:** soft delete, restore, delete forever; items older than 30 days are purged lazily on `GET /items` (Render has no cron).
+- **Offline:** meta, items, categories and shares are cached encrypted in IndexedDB per username. Offline edits go to an outbox and flush in order when back online. `public/sw.js` caches the app shell; `AuthContext` treats a network error as offline for the last signed-in user. Offline unlock uses only gate 2 (master password or local PRF). Signing out clears the cache.
+- **Import/export:** Chrome/Edge, Firefox and Bitwarden CSV import; encrypted `.nsvault` backup (restores with that backup's master password or recovery key, as new items); plain Bitwarden-format CSV behind a warning and master-password check.
+- **Health:** weak (zxcvbn < 3), reused, older than a year, change-after-sharing, and an on-demand Have I Been Pwned range check (only a 5-char SHA-1 prefix leaves the browser; CSP allows `api.pwnedpasswords.com`).
+- **Sharing:** owner looks up a user's public key, compares the safety code, and wraps the item key with ephemeral ECDH + HKDF for them (`VaultShare`). Recipients get read-only view/copy under "Shared with me". The server refuses a share if the recipient's key changed since lookup. Revoking deletes their wrapped key, rotates the item key (re-wrapping remaining shares in the same `PUT`), and flags the item "change this password".
+
+### 17.5 API (`/api/vault`, all behind `requireAuth`; † needs the ticket)
+
+`GET /status` · `POST /setup` · `POST /stepup/webauthn-options|webauthn-verify|totp` · `POST /lock` ·
+†`GET /meta` · †`PUT /meta/password|recovery|settings` · †`DELETE /meta` · †`POST /passkeys/add-options|add-verify` · †`DELETE /passkeys/:id` ·
+†`GET|POST /items` · †`PUT|DELETE /items/:id` · †`POST /items/:id/restore` · †`DELETE /items/:id/purge` · †`GET|POST /categories` · †`PUT|DELETE /categories/:id` ·
+†`GET /recipients/:username` · †`GET|POST /items/:id/shares` · †`DELETE /shares/:id` · †`GET /shared` · †`DELETE /shared/:id`
+
+Models: `VaultMeta` (one per user), `VaultItem`, `VaultCategory`, `VaultShare`. Every vault response is sent with `Cache-Control: no-store`.
 
 ---
 

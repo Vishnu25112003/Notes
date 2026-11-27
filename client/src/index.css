@@ -33,6 +33,9 @@
   --error-border: rgba(236,93,138,.2);
   --success-bg: rgba(91,227,160,.08);
   --success-border: rgba(91,227,160,.2);
+  --vault: #f2c14e;
+  --vault-tint: rgba(242,193,78,.08);
+  --vault-line: rgba(242,193,78,.4);
 }
 
 [data-theme="light"] {
@@ -68,6 +71,9 @@
   --error-border: rgba(196,32,88,.2);
   --success-bg: rgba(26,158,110,.08);
   --success-border: rgba(26,158,110,.2);
+  --vault: #8a5a00;
+  --vault-tint: rgba(138,90,0,.06);
+  --vault-line: rgba(138,90,0,.35);
 }
 
 * { box-sizing: border-box; }

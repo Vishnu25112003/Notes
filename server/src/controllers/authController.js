@@ -13,9 +13,9 @@ import { seal, open, isSealed } from '../lib/secretBox.js';
 import { addSessionToUser, setSessionCookie, clearSessionCookie, getRequestToken, hashToken } from '../lib/session.js';
 import { findSessionUser } from '../middleware/requireAuth.js';
 
-const RP_NAME   = 'Notespace';
-const RP_ID     = process.env.RP_ID || 'localhost';
-const RP_ORIGIN = process.env.RP_ORIGIN || 'http://localhost:5173';
+export const RP_NAME   = 'Notespace';
+export const RP_ID     = process.env.RP_ID || 'localhost';
+export const RP_ORIGIN = process.env.RP_ORIGIN || 'http://localhost:5173';
 const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
 
 // Pending multi-step registrations: username → { credential, totpSecret, expiresAt }
@@ -35,7 +35,7 @@ async function signIn(res, user) {
 
 // Verifies a TOTP code against the user's sealed secret, rejecting replays of an already-used time step.
 // Seals a legacy plaintext secret in place. Returns true on success; the caller saves the user.
-async function verifyUserTotp(user, code) {
+export async function verifyUserTotp(user, code) {
   const secret = isSealed(user.totpSecret) ? open(user.totpSecret) : user.totpSecret;
   const result = await verifyTotp({
     token: code,

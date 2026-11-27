@@ -16,6 +16,7 @@ import searchRouter from './routes/search.js';
 import shareRouter from './routes/share.js';
 import solveRouter from './routes/solve.js';
 import authRouter from './routes/auth.js';
+import vaultRouter from './routes/vault.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { originCheck } from './middleware/originCheck.js';
@@ -66,6 +67,8 @@ app.use('/api/upload',   requireAuth, uploadRouter);
 app.use('/api/search',   requireAuth, searchRouter);
 app.use('/api/share',    requireAuth, shareRouter);
 app.use('/api/solve',    requireAuth, solveRouter);
+// Vault responses carry key material and ciphertext; never let a browser or proxy cache them
+app.use('/api/vault',    requireAuth, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }, vaultRouter);
 
 app.use(errorHandler);
 

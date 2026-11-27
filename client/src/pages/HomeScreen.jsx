@@ -32,6 +32,13 @@ const ShareIcon = () => (
   </svg>
 );
 
+const VaultIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/>
+    <rect x="9" y="10.5" width="6" height="5" rx="1"/><path d="M10.5 10.5V9a1.5 1.5 0 0 1 3 0v1.5"/>
+  </svg>
+);
+
 const ArrowIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
@@ -104,10 +111,10 @@ export default function HomeScreen() {
           Notespace
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full max-w-5xl">
           <button
             onClick={() => navigate('/simple')}
-            className="text-left group"
+            className="text-left group flex flex-col justify-start"
             style={{
               border: '1px solid var(--border)',
               borderRadius: 8,
@@ -132,7 +139,7 @@ export default function HomeScreen() {
 
           <button
             onClick={() => navigate('/sections')}
-            className="text-left"
+            className="text-left flex flex-col justify-start"
             style={{
               border: '1px solid var(--border)',
               borderRadius: 8,
@@ -157,7 +164,7 @@ export default function HomeScreen() {
 
           <button
             onClick={() => navigate('/shared')}
-            className="text-left"
+            className="text-left flex flex-col justify-start"
             style={{
               border: '1px solid var(--border)',
               borderRadius: 8,
@@ -183,6 +190,31 @@ export default function HomeScreen() {
                 ⬤ {pendingRequests} ACCESS REQUEST{pendingRequests > 1 ? 'S' : ''} PENDING
               </div>
             )}
+          </button>
+
+          <button
+            onClick={() => navigate('/vault')}
+            className="text-left flex flex-col justify-start"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: 18,
+              background: 'var(--card-subtle)',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--vault-line, rgba(242,193,78,.4))'; e.currentTarget.style.background = 'var(--vault-tint, rgba(242,193,78,.06))'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--card-subtle)'; }}
+          >
+            <div className="flex justify-between items-start">
+              <span style={{ color: 'var(--vault)' }}><VaultIcon /></span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'var(--text-label)' }}>04</span>
+            </div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 600, color: 'var(--text-2)', marginTop: 18 }}>Vault</div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: 'var(--text-dim)', marginTop: 5, lineHeight: 1.45 }}>Passwords and secrets, end-to-end encrypted.</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: '0.1em', color: 'var(--vault)', marginTop: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+              UNLOCK <ArrowIcon />
+            </div>
           </button>
         </div>
       </div>
