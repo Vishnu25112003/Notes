@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync } from 'fs';
@@ -16,11 +18,22 @@ import solveRouter from './routes/solve.js';
 import authRouter from './routes/auth.js';
 import { requireAuth } from './middleware/requireAuth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { originCheck } from './middleware/originCheck.js';
+import { apiPerIp } from './middleware/rateLimits.js';
+import { assertSecretBoxKey } from './lib/secretBox.js';
+
+assertSecretBoxKey();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIST = join(__dirname, '../../client/dist');
 
 const app = express();
+
+// Production traffic arrives via Vercel's rewrite and Render's edge, so the socket IP is a proxy.
+// TRUST_PROXY=true takes the client IP from X-Forwarded-For. A spoofed header only dodges the
+// per-IP limits; the per-username TOTP limit holds regardless.
+const trustProxy = process.env.TRUST_PROXY;
+app.set('trust proxy', trustProxy === 'true' ? true : Number(trustProxy || 0));
 
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
@@ -35,7 +48,12 @@ app.use(cors({
   },
   credentials: true,
 }));
+// The SPA's CSP is set by Vercel (client/vercel.json); this API only returns JSON
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cookieParser());
 app.use(express.json({ limit: '20mb' }));
+app.use('/api', originCheck(allowedOrigins));
+app.use('/api', apiPerIp);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);

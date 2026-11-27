@@ -332,7 +332,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       const data = await verifyTotpSetup(username.trim(), code);
-      login(data.token, data.username);
+      login(data.username);
     } catch (err) {
       setError(String(err));
       setCode('');
@@ -351,7 +351,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       const data = await authenticateWebAuthn(username.trim());
-      login(data.token, data.username);
+      login(data.username);
     } catch (err) {
       if (isRpIdError(err)) {
         setCode('');
@@ -379,7 +379,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       const data = await loginTotp(username.trim(), code);
-      login(data.token, data.username);
+      login(data.username);
     } catch (err) {
       setError(String(err));
       setCode('');
