@@ -26,6 +26,7 @@
     "framer-motion": "^12.42.2",
     "hash-wasm": "^4.13.0",
     "html2pdf.js": "^0.14.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0",

@@ -14,6 +14,16 @@ export function guessDeviceName() {
   return 'This device';
 }
 
+export function guessBrowser() {
+  const ua = navigator.userAgent;
+  if (/OPR\/|Opera/.test(ua)) return 'Opera';
+  if (/Edg\//.test(ua)) return 'Edge';
+  if (/Firefox\//.test(ua)) return 'Firefox';
+  if (/Chrome\//.test(ua)) return 'Chrome';
+  if (/Safari\//.test(ua)) return 'Safari';
+  return 'browser';
+}
+
 // Registers this device's own vault passkey and stores the Vault Key wrapped under its PRF-derived key.
 // `rawVaultKey` comes from setup or a fresh master-password unwrap; it is not wiped here (the caller owns it).
 export async function enrollThisDevice(rawVaultKey, deviceName = guessDeviceName()) {

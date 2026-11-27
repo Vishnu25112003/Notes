@@ -24,6 +24,7 @@ export function issueTicket(req, res, meta) {
     tokenHash: hashToken(token),
     sessionHash: hashToken(sessionToken || ''),
     expiresAt: new Date(now + ticketTtlMs(meta)),
+    issuedAt: new Date(now),
   });
   res.cookie(VAULT_COOKIE, token, { ...cookieOptions(), maxAge: ticketTtlMs(meta) });
 }

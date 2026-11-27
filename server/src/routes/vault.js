@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireVaultTicket } from '../middleware/requireVaultTicket.js';
 import { vaultStepUpPerUser } from '../middleware/rateLimits.js';
 import * as v from '../controllers/vaultController.js';
+import * as link from '../controllers/vaultLinkController.js';
 
 // Mounted behind requireAuth. Anything that returns key material or ciphertext also needs the vault ticket.
 const router = Router();
@@ -13,9 +14,18 @@ router.post('/stepup/webauthn-verify', vaultStepUpPerUser, v.stepUpWebAuthnVerif
 router.post('/stepup/totp', vaultStepUpPerUser, v.stepUpTotp);
 router.post('/lock', v.lock);
 
+// QR unlock: the PC side runs on the login session alone
+router.post('/link', link.startLink);
+router.get('/link/:id', link.pollLink);
+router.delete('/link/:id', link.cancelLink);
+
 router.use(requireVaultTicket);
 
 router.get('/meta', v.getMeta);
+
+// QR unlock: the phone side needs an unlocked vault
+router.get('/link/:id/info', link.linkInfo);
+router.post('/link/:id/approve', link.approveLink);
 router.put('/meta/password', v.changePassword);
 router.put('/meta/recovery', v.changeRecovery);
 router.put('/meta/settings', v.updateSettings);

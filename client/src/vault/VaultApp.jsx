@@ -13,6 +13,7 @@ import SharedPage from './pages/SharedPage.jsx';
 import TrashPage from './pages/TrashPage.jsx';
 import HealthPage from './pages/HealthPage.jsx';
 import SettingsPage, { ChangePasswordForm } from './pages/SettingsPage.jsx';
+import LinkApprove from './pages/LinkApprove.jsx';
 import './vault.css';
 
 function TopBar({ unlocked }) {
@@ -100,6 +101,7 @@ function Body() {
           <Route path="trash" element={<TrashPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="link" element={<LinkApprove />} />
           <Route path="*" element={<Navigate to="/vault" replace />} />
         </Routes>
       </main>

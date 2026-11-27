@@ -36,6 +36,7 @@ The server and MongoDB only ever hold ciphertext. Neither a database leak nor a 
 | 15 | Offline | Encrypted vault cached on the device (IndexedDB). Edits queue and sync later |
 | 16 | Devices | Android, iPhone, tablets, Linux, Windows, Mac. Mobile and desktop usage is roughly 50/50 |
 | 17 | Hardening | Phase 0 fixes the existing auth gaps first. Strict CSP across the whole app. Vault key kept in memory only |
+| 18 | PC unlock via phone QR (added 2026-11-27) | PC shows a QR, phone approves with fingerprint, Vault Key sent encrypted to the PC's one-time key. Vault only (not Notespace login). Same auto-lock rules on the PC |
 
 ---
 
